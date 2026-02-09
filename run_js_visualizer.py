@@ -767,6 +767,9 @@ class WebVisualizer:
 
             <div class="panel scene-3d">
                 <div id="scene-container"></div>
+                <div class="help-overlay">
+                    <div class="help-text">🖱️ <strong>Drag</strong> to rotate | <strong>Scroll</strong> to zoom</div>
+                </div>
                 <div class="legend">
                     <div class="legend-title">📐 Scene Legend</div>
                     <div class="legend-item"><span class="color-x">━</span> X-Axis (Red)</div>
@@ -830,6 +833,19 @@ const UPDATE_INTERVAL = 200; // 200ms = 5 FPS
 let scene, camera, renderer, room, person, skeleton;
 let animationFrameId;
 
+// Camera control states
+let cameraControls = {
+    isDragging: false,
+    previousMousePosition: { x: 0, y: 0 },
+    cameraDistance: 40,
+    cameraHeight: 20,
+    cameraAngleX: 0,  // Vertical rotation
+    cameraAngleY: 0,  // Horizontal rotation
+    centerX: 9,       // Look-at center
+    centerY: 4,
+    centerZ: 9
+};
+
 class WiFiCSIMonitor {
     constructor() {
         this.lastUpdate = Date.now();
@@ -890,6 +906,118 @@ class WiFiCSIMonitor {
             camera.updateProjectionMatrix();
             renderer.setSize(w, h);
         });
+
+        // Mouse controls for drag and zoom
+        this.setupMouseControls(container);
+    }
+
+    setupMouseControls(container) {
+        // Mouse down - start dragging
+        container.addEventListener('mousedown', (e) => {
+            cameraControls.isDragging = true;
+            cameraControls.previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        // Mouse move - rotate camera
+        document.addEventListener('mousemove', (e) => {
+            if (cameraControls.isDragging) {
+                const deltaX = e.clientX - cameraControls.previousMousePosition.x;
+                const deltaY = e.clientY - cameraControls.previousMousePosition.y;
+
+                // Update camera angles based on mouse movement
+                cameraControls.cameraAngleY += deltaX * 0.005;  // Horizontal rotation
+                cameraControls.cameraAngleX += deltaY * 0.005;  // Vertical rotation
+
+                // Clamp vertical rotation to avoid flipping
+                const maxVerticalAngle = Math.PI / 2.5;
+                cameraControls.cameraAngleX = Math.max(-maxVerticalAngle, Math.min(maxVerticalAngle, cameraControls.cameraAngleX));
+
+                // Update camera position based on angles and distance
+                this.updateCameraPosition();
+
+                cameraControls.previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        // Mouse up - stop dragging
+        document.addEventListener('mouseup', () => {
+            cameraControls.isDragging = false;
+        });
+
+        // Mouse wheel - zoom in/out
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+
+            const zoomSpeed = e.deltaY > 0 ? 1.1 : 0.9;  // Zoom out if positive, in if negative
+            cameraControls.cameraDistance *= zoomSpeed;
+
+            // Clamp zoom distance to reasonable values
+            cameraControls.cameraDistance = Math.max(10, Math.min(80, cameraControls.cameraDistance));
+
+            this.updateCameraPosition();
+        }, { passive: false });
+
+        // Touch controls for mobile
+        let lastTouchDistance = 0;
+        container.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                cameraControls.isDragging = true;
+                cameraControls.previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            } else if (e.touches.length === 2) {
+                lastTouchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        });
+
+        container.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1 && cameraControls.isDragging) {
+                const deltaX = e.touches[0].clientX - cameraControls.previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - cameraControls.previousMousePosition.y;
+
+                cameraControls.cameraAngleY += deltaX * 0.005;
+                cameraControls.cameraAngleX += deltaY * 0.005;
+
+                const maxVerticalAngle = Math.PI / 2.5;
+                cameraControls.cameraAngleX = Math.max(-maxVerticalAngle, Math.min(maxVerticalAngle, cameraControls.cameraAngleX));
+
+                this.updateCameraPosition();
+                cameraControls.previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            } else if (e.touches.length === 2) {
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                if (lastTouchDistance > 0) {
+                    const zoomSpeed = currentDistance > lastTouchDistance ? 0.95 : 1.05;
+                    cameraControls.cameraDistance *= zoomSpeed;
+                    cameraControls.cameraDistance = Math.max(10, Math.min(80, cameraControls.cameraDistance));
+                    this.updateCameraPosition();
+                }
+
+                lastTouchDistance = currentDistance;
+            }
+        });
+
+        container.addEventListener('touchend', () => {
+            cameraControls.isDragging = false;
+            lastTouchDistance = 0;
+        });
+    }
+
+    updateCameraPosition() {
+        // Calculate camera position using spherical coordinates
+        const theta = cameraControls.cameraAngleY;  // Horizontal angle
+        const phi = cameraControls.cameraAngleX;     // Vertical angle
+
+        const x = cameraControls.centerX + cameraControls.cameraDistance * Math.cos(phi) * Math.sin(theta);
+        const y = cameraControls.centerY + cameraControls.cameraDistance * Math.sin(phi) + cameraControls.cameraHeight;
+        const z = cameraControls.centerZ + cameraControls.cameraDistance * Math.cos(phi) * Math.cos(theta);
+
+        camera.position.set(x, y, z);
+        camera.lookAt(cameraControls.centerX, cameraControls.centerY, cameraControls.centerZ);
     }
 
     addCoordinateAxes() {
@@ -1374,6 +1502,37 @@ body {
     width: 100%;
     height: 100%;
     background: #000;
+}
+
+/* Help overlay styling */
+.help-overlay {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 17, 0, 0.85);
+    border: 1px solid #00ff00;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 10;
+    animation: fadeInOut 3s ease-in-out;
+}
+
+.help-text {
+    color: #00ff00;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.help-text strong {
+    color: #ffff00;
+    font-weight: bold;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
 }
 
 /* Legend styling */
