@@ -1712,6 +1712,40 @@ html, body {
                 """Suppress logging from base class"""
                 pass
             
+            def do_HEAD(self):
+                """Handle HEAD requests (used by browsers to check if server is alive)"""
+                try:
+                    path = self.path.split('?')[0]
+                    
+                    if path == '/' or path == '':
+                        self.send_response(200)
+                        self.send_header('Content-type', 'text/html; charset=utf-8')
+                        self.send_header('Content-Length', '7373')
+                        self.end_headers()
+                    elif path == '/data':
+                        self.send_response(200)
+                        self.send_header('Content-type', 'application/json; charset=utf-8')
+                        self.send_header('Cache-Control', 'no-cache')
+                        self.end_headers()
+                    elif path.endswith('.js'):
+                        self.send_response(200)
+                        self.send_header('Content-type', 'application/javascript; charset=utf-8')
+                        self.end_headers()
+                    elif path.endswith('.css'):
+                        self.send_response(200)
+                        self.send_header('Content-type', 'text/css; charset=utf-8')
+                        self.end_headers()
+                    else:
+                        self.send_response(200)
+                        self.end_headers()
+                except Exception as e:
+                    logger.error(f"Error in do_HEAD: {e}")
+                    try:
+                        self.send_response(200)
+                        self.end_headers()
+                    except:
+                        pass
+            
             def do_GET(self):
                 """Handle GET requests"""
                 try:
