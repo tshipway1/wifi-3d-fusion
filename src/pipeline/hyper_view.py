@@ -1,9 +1,31 @@
 # src/pipeline/hyper_view.py
 import time, threading
 import numpy as np
-import open3d as o3d
+from loguru import logger
+
+try:
+    import open3d as o3d
+    HAS_OPEN3D = True
+except ImportError:
+    HAS_OPEN3D = False
+    logger.warning(
+        "open3d not available - 3D visualization disabled. "
+        "To enable visualization on Raspberry Pi:\n"
+        "  1. Install Miniforge from https://conda-forge.org/\n"
+        "  2. Run: bash install_conda.sh\n"
+        "  3. conda activate wifi3d"
+    )
+
+def _check_open3d():
+    if not HAS_OPEN3D:
+        raise ImportError(
+            "open3d is required for visualization. "
+            "On Raspberry Pi, use conda:\n"
+            "  bash install_conda.sh && conda activate wifi3d"
+        )
 
 def _cube_wire(center, size, color=(0.0, 0.6, 0.2)):
+    _check_open3d()
     cx, cy, cz = center; s = size/2.0
     pts = np.array([
         [cx-s, cy-s, cz-s],[cx+s, cy-s, cz-s],[cx+s, cy+s, cz-s],[cx-s, cy+s, cz-s],

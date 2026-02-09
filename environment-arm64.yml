@@ -1,0 +1,31 @@
+# ARM64 (Raspberry Pi) conda environment for wifi-3d-fusion
+# Simplified version compatible with conda-forge ARM64
+
+name: wifi3d
+channels:
+  - conda-forge
+dependencies:
+  # Python & core
+  - python=3.11
+  - numpy
+  - scipy
+  - scikit-learn
+  - pyyaml
+  - matplotlib
+  - pandas
+  - opencv
+  # Visualization (key for open3d on ARM64)
+  - open3d
+  - vtk
+  # Install remaining via pip
+  - pip
+  - pip:
+    - loguru==0.7.3
+    - einops==0.8.1
+    - watchdog==6.0.0
+    - pyzmq==27.0.2
+    - csiread==1.4.1
+    - plotly==6.3.0
+    - pyvista==0.46.2
+    - ipython==9.4.0
+    - ipywidgets==8.1.7

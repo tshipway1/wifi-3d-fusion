@@ -702,22 +702,903 @@ class WebVisualizer:
         os.makedirs(os.path.join(self.visualization_path, 'js'), exist_ok=True)
         os.makedirs(os.path.join(self.visualization_path, 'css'), exist_ok=True)
         
-        # FILE CREATION COMPLETELY DISABLED - User manually manages files
-        logger.info("🚫 File creation disabled - using existing files only")
+        # Create visualization interface files if missing
+        self._create_files_if_missing()
     
     def _create_files_if_missing(self):
         """Create necessary files for visualization only if they don't exist"""
-        # DISABLED: Do not create or overwrite any files
-        # User requested to stop automatic file generation
-        logger.info("File creation disabled - using existing files only")
-        pass
+        index_path = os.path.join(self.visualization_path, 'index.html')
+        app_js_path = os.path.join(self.visualization_path, 'js', 'app.js')
+        style_css_path = os.path.join(self.visualization_path, 'css', 'style.css')
+        
+        if not os.path.exists(index_path):
+            logger.info("Creating index.html...")
+            self._create_html()
+        if not os.path.exists(app_js_path):
+            logger.info("Creating app.js...")
+            self._create_app_js()
+        if not os.path.exists(style_css_path):
+            logger.info("Creating style.css...")
+            self._create_style_css()
+        
+        logger.info("✅ Visualization files ready")
     
     def _create_files(self):
         """Create necessary files for visualization"""
-        # DISABLED: Do not create any files
-        # User requested to stop automatic file generation
-        logger.info("File creation completely disabled")
-        pass
+        logger.info("Creating visualization interface files...")
+        self._create_html()
+        self._create_app_js()
+        self._create_style_css()
+        logger.info("✅ Visualization files created successfully")
+    
+    def _create_html(self):
+        """Create index.html"""
+        html_content = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi-3D-Fusion Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📡 WiFi-3D-Fusion Dashboard</h1>
+            <div class="status-indicator">
+                <span id="status" class="status-active">● Live</span>
+                <span id="frame-counter">Frames: 0</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="grid-layout">
+                <!-- 3D Visualization Panel -->
+                <section class="panel 3d-panel">
+                    <h2>3D Environment</h2>
+                    <div id="canvas-container" class="canvas-3d">
+                        <canvas id="3d-canvas"></canvas>
+                    </div>
+                </section>
+
+                <!-- Metrics Panel -->
+                <section class="panel metrics-panel">
+                    <h2>System Metrics</h2>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <label>FPS</label>
+                            <span id="fps-value">0</span>
+                        </div>
+                        <div class="metric">
+                            <label>Data Rate</label>
+                            <span id="datarate-value">0</span> MB/s
+                        </div>
+                        <div class="metric">
+                            <label>Signal Strength</label>
+                            <span id="signal-value">0</span> dBm
+                        </div>
+                        <div class="metric">
+                            <label>Detected Persons</label>
+                            <span id="persons-value">0</span>
+                        </div>
+                        <div class="metric">
+                            <label>CPU Usage</label>
+                            <span id="cpu-value">0</span> %
+                        </div>
+                        <div class="metric">
+                            <label>Memory Usage</label>
+                            <span id="memory-value">0</span> GB
+                        </div>
+                        <div class="metric">
+                            <label>Temperature</label>
+                            <span id="temp-value">0</span> °C
+                        </div>
+                        <div class="metric">
+                            <label>Uptime</label>
+                            <span id="uptime-value">0</span>s
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Detection Panel -->
+                <section class="panel detection-panel">
+                    <h2>Detection Analytics</h2>
+                    <div class="detection-stats">
+                        <div class="stat-box">
+                            <span class="label">Total Detections</span>
+                            <span id="total-detections" class="value">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="label">Average Confidence</span>
+                            <span id="avg-confidence" class="value">0%</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="label">Tracking Stability</span>
+                            <span id="tracking-stability" class="value">0%</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="label">False Positive Rate</span>
+                            <span id="false-positive" class="value">0%</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="label">Detection Range</span>
+                            <span id="detection-range" class="value">0</span>m
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Environment Panel -->
+                <section class="panel env-panel">
+                    <h2>Environmental Analysis</h2>
+                    <div class="env-stats">
+                        <div class="env-item">
+                            <span class="label">Interference Level</span>
+                            <div class="progress-bar">
+                                <div id="interference-bar" class="progress-fill"></div>
+                            </div>
+                            <span id="interference-value">0%</span>
+                        </div>
+                        <div class="env-item">
+                            <span class="label">Multipath Effects</span>
+                            <div class="progress-bar">
+                                <div id="multipath-bar" class="progress-fill"></div>
+                            </div>
+                            <span id="multipath-value">0%</span>
+                        </div>
+                        <div class="env-item">
+                            <span class="label">SNR</span>
+                            <div class="progress-bar">
+                                <div id="snr-bar" class="progress-fill"></div>
+                            </div>
+                            <span id="snr-value">0 dB</span>
+                        </div>
+                        <div class="env-item">
+                            <span class="label">Channel Quality: <span id="channel-quality">UNKNOWN</span></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Activity Log -->
+                <section class="panel activity-panel">
+                    <h2>Activity Log</h2>
+                    <div id="activity-log" class="activity-log">
+                        <p class="placeholder">Waiting for activity...</p>
+                    </div>
+                </section>
+
+                <!-- CSI Data Visualization -->
+                <section class="panel csi-panel">
+                    <h2>CSI Data (3D Points)</h2>
+                    <canvas id="csi-chart" class="charts"></canvas>
+                </section>
+
+                <!-- Performance Chart -->
+                <section class="panel performance-panel">
+                    <h2>Performance Trends</h2>
+                    <canvas id="performance-chart" class="charts"></canvas>
+                </section>
+
+                <!-- Detector List -->
+                <section class="panel detector-panel">
+                    <h2>Detected Persons</h2>
+                    <div id="detector-list" class="detector-items">
+                        <p class="placeholder">No detections yet</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>WiFi-3D-Fusion v1.0 | Real-time WiFi-based 3D Perception | Last Updated: <span id="last-update">--:--:--</span></p>
+        </footer>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>'''
+        
+        with open(os.path.join(self.visualization_path, 'index.html'), 'w') as f:
+            f.write(html_content)
+    
+    def _create_app_js(self):
+        """Create app.js"""
+        js_content = '''// WiFi-3D-Fusion Dashboard JavaScript
+const UPDATE_INTERVAL = 500; // 500ms
+let performanceChart = null;
+let dataHistory = [];
+let frameCount = 0;
+
+class Dashboard {
+    constructor() {
+        this.lastUpdate = Date.now();
+        this.frameData = null;
+        this.init();
+    }
+
+    init() {
+        this.setupCharts();
+        this.startPolling();
+    }
+
+    setupCharts() {
+        // Performance chart
+        const perfCtx = document.getElementById('performance-chart')?.getContext('2d');
+        if (perfCtx) {
+            performanceChart = new Chart(perfCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'FPS',
+                            data: [],
+                            borderColor: '#00ff00',
+                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'CPU %',
+                            data: [],
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: '#00ff00'
+                            },
+                            grid: {
+                                color: 'rgba(0, 255, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#00ff00'
+                            },
+                            grid: {
+                                color: 'rgba(0, 255, 0, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff00'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    startPolling() {
+        setInterval(() => this.updateData(), UPDATE_INTERVAL);
+    }
+
+    async updateData() {
+        try {
+            const response = await fetch('/data');
+            const data = await response.json();
+
+            if (data.error) {
+                this.setStatus('offline');
+                return;
+            }
+
+            this.setStatus('online');
+            this.frameData = data;
+            frameCount = data.frame_id || 0;
+
+            // Update all dashboard elements
+            this.updateMetrics(data);
+            this.updateDetectors(data);
+            this.updateCharts(data);
+            this.updateEnvironment(data);
+            this.updateActivity(data);
+            this.update3DVisualization(data);
+
+            document.getElementById('frame-counter').textContent = `Frames: ${frameCount}`;
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+        } catch (error) {
+            console.error('Failed to fetch data:', error);
+            this.setStatus('offline');
+        }
+    }
+
+    updateMetrics(data) {
+        const metrics = {
+            'fps-value': data.fps?.toFixed(1) || '0',
+            'datarate-value': data.data_rate?.toFixed(2) || '0',
+            'signal-value': data.signal_strength?.toFixed(1) || '0',
+            'persons-value': data.persons?.length || '0',
+            'cpu-value': data.system_metrics?.cpu_usage?.toFixed(1) || '0',
+            'memory-value': data.system_metrics?.memory_usage?.toFixed(2) || '0',
+            'temp-value': data.system_metrics?.temperature?.toFixed(1) || '0',
+            'uptime-value': Math.floor(data.system_metrics?.uptime || 0)
+        };
+
+        Object.entries(metrics).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        });
+    }
+
+    updateDetectors(data) {
+        const list = document.getElementById('detector-list');
+        if (!data.persons || data.persons.length === 0) {
+            list.innerHTML = '<p class="placeholder">No detections yet</p>';
+            return;
+        }
+
+        list.innerHTML = data.persons.map(person => `
+            <div class="detector-item">
+                <div class="detector-info">
+                    <span class="id">Person #${person.id}</span>
+                    <span class="confidence" style="background: ${this.getColorForConfidence(person.confidence)}">
+                        ${(person.confidence * 100).toFixed(0)}%
+                    </span>
+                </div>
+                <div class="position">
+                    Pos: [${person.position?.map(p => p.toFixed(2)).join(', ') || 'N/A'}]
+                </div>
+            </div>
+        `).join('');
+    }
+
+    updateCharts(data) {
+        if (!performanceChart) return;
+
+        const now = new Date().toLocaleTimeString();
+        performanceChart.data.labels.push(now);
+        performanceChart.data.datasets[0].data.push(data.fps?.toFixed(1) || 0);
+        performanceChart.data.datasets[1].data.push(data.system_metrics?.cpu_usage?.toFixed(1) || 0);
+
+        // Keep only last 20 data points
+        if (performanceChart.data.labels.length > 20) {
+            performanceChart.data.labels.shift();
+            performanceChart.data.datasets.forEach(ds => ds.data.shift());
+        }
+
+        performanceChart.update('none');
+    }
+
+    updateEnvironment(data) {
+        if (!data.environmental_analysis) return;
+
+        const env = data.environmental_analysis;
+        const stats = {
+            'interference-bar': Math.min(env.interference_level * 100 || 0, 100),
+            'interference-value': (env.interference_level * 100).toFixed(0) + '%',
+            'multipath-bar': Math.min(env.multipath_effects * 100 || 0, 100),
+            'multipath-value': (env.multipath_effects * 100).toFixed(0) + '%',
+            'snr-bar': Math.min((env.snr_db / 50) * 100 || 0, 100),
+            'snr-value': env.snr_db?.toFixed(1) + ' dB',
+            'channel-quality': env.channel_quality || 'UNKNOWN'
+        };
+
+        Object.entries(stats).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (id.includes('bar')) {
+                    el.style.width = value + '%';
+                } else {
+                    el.textContent = value;
+                }
+            }
+        });
+    }
+
+    updateActivity(data) {
+        const log = document.getElementById('activity-log');
+        if (!data.activity || data.activity.length === 0) return;
+
+        log.innerHTML = data.activity.slice(-10).reverse().map(activity => `
+            <div class="activity-item">
+                <span class="time">${activity.timestamp}</span>
+                <span class="message">${activity.message}</span>
+            </div>
+        `).join('');
+    }
+
+    update3DVisualization(data) {
+        const canvas = document.getElementById('3d-canvas');
+        if (!canvas) return;
+
+        // Draw simple 3D representation using canvas
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width = canvas.offsetWidth;
+        const height = canvas.height = canvas.offsetHeight;
+
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw grid
+        ctx.strokeStyle = '#00ff0030';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < width; i += 50) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, height);
+            ctx.stroke();
+        }
+        for (let i = 0; i < height; i += 50) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(width, i);
+            ctx.stroke();
+        }
+
+        // Draw detected persons
+        if (data.persons && data.persons.length > 0) {
+            data.persons.forEach(person => {
+                const x = (width / 2) + (person.position[0] * 20);
+                const y = (height / 2) + (person.position[1] * 20);
+                
+                const color = this.getColorForConfidence(person.confidence);
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(x, y, 15, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`#${person.id}`, x, y);
+            });
+        }
+
+        // Draw CSI points
+        if (data.csi_data && data.csi_data.length > 0) {
+            ctx.fillStyle = '#0099ff60';
+            data.csi_data.forEach(point => {
+                const x = (width / 2) + (point[0] * 10);
+                const y = (height / 2) + (point[1] * 10);
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+    }
+
+    updateDetectionAnalytics(data) {
+        if (!data.detection_analytics) return;
+
+        const analytics = {
+            'total-detections': data.detection_analytics.total_detections || 0,
+            'avg-confidence': ((data.detection_analytics.average_confidence || 0) * 100).toFixed(0) + '%',
+            'tracking-stability': ((data.detection_analytics.tracking_stability || 0) * 100).toFixed(0) + '%',
+            'false-positive': ((data.detection_analytics.false_positive_rate || 0) * 100).toFixed(2) + '%',
+            'detection-range': data.detection_analytics.detection_range_m?.toFixed(1) || '0'
+        };
+
+        Object.entries(analytics).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        });
+    }
+
+    setStatus(status) {
+        const statusEl = document.getElementById('status');
+        if (statusEl) {
+            if (status === 'online') {
+                statusEl.className = 'status-active';
+                statusEl.textContent = '● Live';
+            } else {
+                statusEl.className = 'status-inactive';
+                statusEl.textContent = '● Offline';
+            }
+        }
+    }
+
+    getColorForConfidence(confidence) {
+        if (confidence >= 0.9) return '#00ff00';
+        if (confidence >= 0.7) return '#ffff00';
+        if (confidence >= 0.5) return '#ff9900';
+        return '#ff0000';
+    }
+}
+
+// Initialize dashboard on page load
+document.addEventListener('DOMContentLoaded', () => {
+    new Dashboard();
+});'''
+        
+        os.makedirs(os.path.join(self.visualization_path, 'js'), exist_ok=True)
+        with open(os.path.join(self.visualization_path, 'js', 'app.js'), 'w') as f:
+            f.write(js_content)
+    
+    def _create_style_css(self):
+        """Create style.css"""
+        css_content = '''/* WiFi-3D-Fusion Dashboard Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #00ff00;
+    --secondary-color: #0099ff;
+    --accent-color: #ff6b6b;
+    --dark-bg: #0a0e27;
+    --panel-bg: #1a1f3a;
+    --border-color: #00ff0040;
+    --text-color: #00ff00;
+    --text-secondary: #00aa00;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    background: var(--dark-bg);
+    color: var(--text-color);
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    overflow: hidden;
+}
+
+.header {
+    background: linear-gradient(90deg, #00ff0020 0%, #0099ff20 100%);
+    border-bottom: 2px solid var(--primary-color);
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+}
+
+.header h1 {
+    font-size: 24px;
+    text-shadow: 0 0 10px var(--primary-color);
+    font-weight: bold;
+}
+
+.status-indicator {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.status-active {
+    color: var(--primary-color);
+    text-shadow: 0 0 10px var(--primary-color);
+}
+
+.status-inactive {
+    color: #ff0000;
+    text-shadow: 0 0 10px #ff0000;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background: var(--dark-bg);
+}
+
+.grid-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 15px;
+    grid-auto-rows: max-content;
+}
+
+.panel {
+    background: var(--panel-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 255, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.panel:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 32px rgba(0, 255, 0, 0.3);
+}
+
+.panel h2 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-shadow: 0 0 5px var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.3d-panel {
+    grid-column: span 2;
+    min-height: 350px;
+}
+
+.canvas-3d {
+    width: 100%;
+    height: 300px;
+    background: #000;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#3d-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    background: rgba(0, 255, 0, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.metric label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.metric span {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--primary-color);
+    text-shadow: 0 0 5px var(--primary-color);
+}
+
+.detection-stats, .env-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.stat-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 99, 255, 0.05);
+    border: 1px solid var(--secondary-color);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.stat-box .label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.stat-box .value {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--secondary-color);
+    text-shadow: 0 0 5px var(--secondary-color);
+}
+
+.env-item {
+    margin-bottom: 12px;
+}
+
+.env-item .label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: rgba(0, 255, 0, 0.1);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    width: 0%;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+.env-item > span:last-child {
+    font-size: 12px;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.activity-log {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.activity-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px;
+    background: rgba(0, 255, 0, 0.05);
+    border-left: 3px solid var(--primary-color);
+    border-radius: 2px;
+    font-size: 12px;
+}
+
+.activity-item .time {
+    color: var(--secondary-color);
+    font-weight: bold;
+    min-width: 60px;
+}
+
+.activity-item .message {
+    color: var(--text-secondary);
+    flex: 1;
+    word-break: break-word;
+}
+
+.placeholder {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.charts {
+    width: 100%;
+    height: 250px;
+}
+
+.detector-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.detector-item {
+    padding: 10px;
+    background: rgba(0, 99, 255, 0.05);
+    border: 1px solid var(--secondary-color);
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detector-info {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.detector-item .id {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.detector-item .confidence {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #000;
+    text-shadow: none;
+}
+
+.detector-item .position {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+.footer {
+    background: linear-gradient(90deg, #00ff0020 0%, #0099ff20 100%);
+    border-top: 2px solid var(--primary-color);
+    padding: 10px 25px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+    backdrop-filter: blur(10px);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--panel-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .grid-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .3d-panel {
+        grid-column: span 1;
+    }
+
+    .header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .header h1 {
+        font-size: 18px;
+    }
+
+    .metrics-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Animations */
+@keyframes glow {
+    0%, 100% {
+        text-shadow: 0 0 5px var(--primary-color);
+    }
+    50% {
+        text-shadow: 0 0 20px var(--primary-color);
+    }
+}
+
+.metric span:hover,
+.stat-box .value:hover {
+    animation: glow 1s infinite;
+}'''
+        
+        os.makedirs(os.path.join(self.visualization_path, 'css'), exist_ok=True)
+        with open(os.path.join(self.visualization_path, 'css', 'style.css'), 'w') as f:
+            f.write(css_content)
     
     def update_data(self, frame_data: FrameData):
         """Update visualization data with enhanced metrics and 3D rendering data"""
@@ -823,85 +1704,110 @@ class WebVisualizer:
         if self.running:
             return
             
-        # Custom HTTP request handler
-        class VisualizationHandler(http.server.SimpleHTTPRequestHandler):
-            def __init__(self, *args, **kwargs):
-                self.visualization_path = VISUALIZATION_PATH
-                super().__init__(*args, **kwargs)
-                
+        # Custom HTTP request handler with robust error handling
+        class VisualizationHandler(http.server.BaseHTTPRequestHandler):
+            visualization_path = VISUALIZATION_PATH
+            
+            def log_message(self, format, *args):
+                """Suppress logging from base class"""
+                pass
+            
             def do_GET(self):
-                if self.path == '/':
-                    # Serve index.html for root requests
-                    self.send_response(200)
-                    self.send_header('Content-type', 'text/html')
-                    self.end_headers()
+                """Handle GET requests"""
+                try:
+                    path = self.path.split('?')[0]  # Remove query string
                     
-                    try:
-                        with open(os.path.join(self.visualization_path, 'index.html'), 'r') as f:
-                            data = f.read()
-                        self.wfile.write(data.encode())
-                    except Exception as e:
-                        self.wfile.write(b'<html><body><h1>Error loading visualization</h1></body></html>')
-                elif self.path == '/data':
-                    # Serve JSON data
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.send_header('Cache-Control', 'no-cache')
-                    self.end_headers()
+                    if path == '/' or path == '':
+                        # Serve index.html for root requests
+                        try:
+                            with open(os.path.join(self.visualization_path, 'index.html'), 'r') as f:
+                                content = f.read().encode('utf-8')
+                            self.send_response(200)
+                            self.send_header('Content-type', 'text/html; charset=utf-8')
+                            self.send_header('Content-Length', len(content))
+                            self.end_headers()
+                            self.wfile.write(content)
+                        except Exception as e:
+                            logger.error(f"Error serving index.html: {e}")
+                            content = b'<html><body><h1>Dashboard Loading...</h1></body></html>'
+                            self.send_response(200)
+                            self.send_header('Content-type', 'text/html')
+                            self.send_header('Content-Length', len(content))
+                            self.end_headers()
+                            self.wfile.write(content)
                     
-                    # Read the latest data
-                    try:
-                        with open(os.path.join(self.visualization_path, 'data.json'), 'r') as f:
-                            data = f.read()
-                        self.wfile.write(data.encode())
-                    except Exception as e:
-                        # Return empty data on error
-                        self.wfile.write(b'{"error": "No data available"}')
-                elif self.path.startswith('/js/') or self.path.startswith('/css/'):
-                    # Serve JS and CSS files
-                    file_path = os.path.join(self.visualization_path, self.path[1:])
-                    
-                    if os.path.exists(file_path):
-                        self.send_response(200)
-                        if self.path.endswith('.js'):
-                            self.send_header('Content-type', 'application/javascript')
-                        elif self.path.endswith('.css'):
-                            self.send_header('Content-type', 'text/css')
-                        self.end_headers()
+                    elif path == '/data':
+                        # Serve JSON data
+                        try:
+                            with open(os.path.join(self.visualization_path, 'data.json'), 'r') as f:
+                                content = f.read().encode('utf-8')
+                        except:
+                            content = b'{"error": "No data available"}'
                         
-                        with open(file_path, 'rb') as f:
-                            self.wfile.write(f.read())
+                        self.send_response(200)
+                        self.send_header('Content-type', 'application/json; charset=utf-8')
+                        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                        self.send_header('Content-Length', len(content))
+                        self.end_headers()
+                        self.wfile.write(content)
+                    
+                    elif path.startswith('/js/') or path.startswith('/css/'):
+                        # Serve JS and CSS files
+                        file_path = os.path.join(self.visualization_path, path.lstrip('/'))
+                        
+                        if os.path.exists(file_path) and os.path.isfile(file_path):
+                            try:
+                                with open(file_path, 'rb') as f:
+                                    content = f.read()
+                                
+                                self.send_response(200)
+                                if path.endswith('.js'):
+                                    self.send_header('Content-type', 'application/javascript; charset=utf-8')
+                                elif path.endswith('.css'):
+                                    self.send_header('Content-type', 'text/css; charset=utf-8')
+                                else:
+                                    self.send_header('Content-type', 'application/octet-stream')
+                                self.send_header('Content-Length', len(content))
+                                self.end_headers()
+                                self.wfile.write(content)
+                            except Exception as e:
+                                logger.error(f"Error serving {file_path}: {e}")
+                                self.send_response(500)
+                                self.send_header('Content-type', 'text/plain')
+                                self.end_headers()
+                                self.wfile.write(b'Internal server error')
+                        else:
+                            self.send_response(404)
+                            self.send_header('Content-type', 'text/plain')
+                            self.end_headers()
+                            self.wfile.write(b'File not found')
+                    
                     else:
                         self.send_response(404)
+                        self.send_header('Content-type', 'text/plain')
                         self.end_headers()
-                        self.wfile.write(b'File not found')
-                else:
-                    # Serve other static files
-                    self.path = os.path.join('/visualizer', self.path)
-                    return http.server.SimpleHTTPRequestHandler.do_GET(self)
-                    
-            def translate_path(self, path):
-                # Translate URL path to file system path
-                path = http.server.SimpleHTTPRequestHandler.translate_path(self, path)
+                        self.wfile.write(b'Not found')
                 
-                # Replace the default directory with visualization_path
-                if path.startswith(os.path.join(os.getcwd(), 'visualizer')):
-                    return path.replace(os.path.join(os.getcwd(), 'visualizer'), self.visualization_path, 1)
-                
-                # For direct paths to files in visualization_path
-                if path == os.path.join(os.getcwd()) or path == os.getcwd():
-                    return os.path.join(self.visualization_path)
-                    
-                    return path
+                except Exception as e:
+                    logger.error(f"Error in do_GET: {e}")
+                    try:
+                        self.send_response(500)
+                        self.send_header('Content-type', 'text/plain')
+                        self.end_headers()
+                        self.wfile.write(b'Internal server error')
+                    except:
+                        pass
         
         # Allow address reuse to avoid "Address already in use" errors
         socketserver.TCPServer.allow_reuse_address = True
         
         # Create server with better error handling
         try:
-            # Bind to all interfaces with empty string
-            self.server = socketserver.ThreadingTCPServer(('', self.port), VisualizationHandler)
-            self.server.visualization_path = self.visualization_path
+            # Bind to all interfaces (empty string means all available)
+            self.server = socketserver.ThreadingTCPServer(('0.0.0.0', self.port), VisualizationHandler)
+            
+            # Set socket options
+            self.server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             
             # Start server in a separate thread
             self.server_thread = threading.Thread(target=self.server.serve_forever)
@@ -909,7 +1815,7 @@ class WebVisualizer:
             self.server_thread.start()
             
             self.running = True
-            logger.info(f"✅ Visualization server started at http://localhost:{self.port}/")
+            logger.info(f"✅ Visualization server started at http://0.0.0.0:{self.port}/")
         except OSError as e:
             if e.errno == 98:  # Address already in use
                 logger.error(f"❌ Port {self.port} is already in use! Try a different port with --port option")

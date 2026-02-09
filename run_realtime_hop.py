@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from collections import defaultdict, deque
 
 # Core imports
-from run_realtime_gaussian_fast import GaussianRealtimeView, ReIDBridge
+from src.pipeline.gaussian_csi_viewer import GaussianRealtimeView, ReIDBridge
 from src.csi_sources.monitor_radiotap import MonitorRadiotapSource
 from src.common.config import load_cfg, ensure_dirs
 

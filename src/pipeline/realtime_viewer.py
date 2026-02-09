@@ -1,10 +1,28 @@
 # src/pipeline/realtime_viewer.py
 import numpy as np, threading, time
-import open3d as o3d
 from loguru import logger
+
+try:
+    import open3d as o3d
+    HAS_OPEN3D = True
+except ImportError:
+    HAS_OPEN3D = False
+    logger.warning(
+        "open3d not available - 3D visualization disabled. "
+        "To enable visualization on Raspberry Pi:\n"
+        "  1. Install Miniforge from https://conda-forge.org/\n"
+        "  2. Run: bash install_conda.sh\n"
+        "  3. conda activate wifi3d"
+    )
 
 class LivePointCloud:
     def __init__(self, point_size: float = 4.0):
+        if not HAS_OPEN3D:
+            raise ImportError(
+                "open3d is required for visualization. "
+                "On Raspberry Pi, use conda:\n"
+                "  bash install_conda.sh && conda activate wifi3d"
+            )
         self._pcd = o3d.geometry.PointCloud()
         self._lock = threading.Lock()
         self._updated = False
