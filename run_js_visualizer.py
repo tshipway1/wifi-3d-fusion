@@ -1026,7 +1026,7 @@ class WiFiCSIMonitor {
             const personList = document.getElementById('person-list');
             if (data.persons && data.persons.length > 0) {
                 personList.innerHTML = data.persons.map(p => 
-                    `<div class="status-line">Person #${p.id}: ${(p.confidence * 100).toFixed(1)}% conf</div>`
+                    `<div class="status-line">Person #${p.id}: ${p.confidence.toFixed(1)}% conf</div>`
                 ).join('');
             } else {
                 personList.innerHTML = '<div class="status-line">No persons detected</div>';
