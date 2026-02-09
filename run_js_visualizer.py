@@ -767,6 +767,17 @@ class WebVisualizer:
 
             <div class="panel scene-3d">
                 <div id="scene-container"></div>
+                <div class="legend">
+                    <div class="legend-title">📐 Scene Legend</div>
+                    <div class="legend-item"><span class="color-x">━</span> X-Axis (Red)</div>
+                    <div class="legend-item"><span class="color-y">━</span> Y-Axis (Height)</div>
+                    <div class="legend-item"><span class="color-z">━</span> Z-Axis (Blue)</div>
+                    <div class="legend-item"><span class="color-grid">━</span> Floor Grid (1m)</div>
+                    <div class="legend-item"><span class="color-person">●</span> Person (0.5m)</div>
+                    <div class="legend-item"><span class="color-skeleton">●</span> Joints (Yellow)</div>
+                    <div class="legend-item"><span class="color-furniture">━</span> Furniture</div>
+                    <div class="legend-item">🏠 Room: 18×18×8m</div>
+                </div>
             </div>
 
             <div class="panel system-metrics">
@@ -838,32 +849,35 @@ class WiFiCSIMonitor {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
 
-        // Camera
+        // Camera - isometric view for better 3D perspective
         const width = container.clientWidth;
         const height = container.clientHeight;
-        camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
-        camera.position.set(15, 12, 15);
-        camera.lookAt(0, 0, 0);
+        camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+        camera.position.set(25, 18, 25);
+        camera.lookAt(9, 4, 9);
 
         // Renderer
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
+        renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
-        // Grid floor (animated CSI noise pattern)
-        const gridHelper = new THREE.GridHelper(20, 20, 0x00ff00, 0x004400);
-        scene.add(gridHelper);
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(20, 20, 20);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        // Add 3D coordinate axes
+        this.addCoordinateAxes();
 
         // Wireframe room/environment
         this.createWireframeRoom();
-
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0x00ff00, 0.3);
-        scene.add(ambientLight);
-        
-        const pointLight = new THREE.PointLight(0x00ff00, 0.7);
-        pointLight.position.set(5, 10, 5);
-        scene.add(pointLight);
 
         // Start animation loop
         this.animate();
@@ -878,76 +892,253 @@ class WiFiCSIMonitor {
         });
     }
 
+    addCoordinateAxes() {
+        // X axis (Red)
+        const xAxis = this.createAxisLine([0,0,0], [5,0,0], 0xff0000, 'X');
+        scene.add(xAxis);
+
+        // Y axis (Green)
+        const yAxis = this.createAxisLine([0,0,0], [0,5,0], 0x00ff00, 'Y');
+        scene.add(yAxis);
+
+        // Z axis (Blue)
+        const zAxis = this.createAxisLine([0,0,0], [0,0,5], 0x0088ff, 'Z');
+        scene.add(zAxis);
+
+        // Origin marker (white sphere)
+        const originGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+        const originMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const originMarker = new THREE.Mesh(originGeometry, originMaterial);
+        originMarker.position.set(0, 0, 0);
+        scene.add(originMarker);
+    }
+
+    createAxisLine(start, end, color, label) {
+        const points = [new THREE.Vector3(...start), new THREE.Vector3(...end)];
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.LineBasicMaterial({ color: color, linewidth: 3 });
+        const line = new THREE.Line(geometry, material);
+        line.userData.label = label;
+        return line;
+    }
+
     createWireframeRoom() {
-        // Create wireframe boxes representing room/environment
+        // Room dimensions: 18m x 8m height x 18m depth
         const roomGroup = new THREE.Group();
 
-        // Main room wireframe
-        const roomGeometry = new THREE.BoxGeometry(18, 8, 18);
-        const roomMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0x00ff00, 
-            wireframe: true, 
-            transparent: true, 
-            opacity: 0.3 
-        });
-        const roomMesh = new THREE.Mesh(roomGeometry, roomMaterial);
-        roomMesh.position.y = 4;
-        roomGroup.add(roomMesh);
+        // Floor grid (18x18m) - 1m cells
+        this.createFloorGrid(18, 18, 1, 0x004400, roomGroup);
 
-        // Smaller boxes for furniture/obstacles
-        const boxPositions = [
-            { x: -6, y: 1, z: -6, w: 3, h: 2, d: 3 },
-            { x: 6, y: 1.5, z: 6, w: 4, h: 3, d: 4 },
-            { x: -7, y: 0.5, z: 7, w: 2, h: 1, d: 2 },
-            { x: 7, y: 2, z: -7, w: 3, h: 4, d: 3 }
+        // Ceiling grid
+        this.createCeilingGrid(18, 18, 8, 1, 0x002200, roomGroup);
+
+        // Room perimeter walls
+        this.createRoomWalls(18, 8, 18, roomGroup);
+
+        // Furniture/obstacles (realistic room objects)
+        const obstacles = [
+            { pos: [3, 1.5, 3], size: [2, 3, 2], label: 'Shelf' },
+            { pos: [12, 2, 6], size: [3, 4, 1.5], label: 'Cabinet' },
+            { pos: [8, 1, 14], size: [2, 2, 2], label: 'Table' },
+            { pos: [14, 1, 10], size: [1.5, 2.5, 1], label: 'Chair' }
         ];
 
-        boxPositions.forEach(pos => {
-            const geometry = new THREE.BoxGeometry(pos.w, pos.h, pos.d);
-            const material = new THREE.MeshBasicMaterial({ 
-                color: 0x00aa00, 
-                wireframe: true, 
-                transparent: true, 
-                opacity: 0.4 
-            });
-            const box = new THREE.Mesh(geometry, material);
-            box.position.set(pos.x, pos.y, pos.z);
-            roomGroup.add(box);
+        obstacles.forEach(obs => {
+            this.createObstacle(obs.pos, obs.size, obs.label, roomGroup);
         });
+
+        // Reference markers every 5m
+        this.createReferenceMarkers(18, 18, roomGroup);
 
         room = roomGroup;
         scene.add(room);
     }
 
-    updatePersonVisualization(personData) {
-        // Remove old person marker
-        if (person) {
-            scene.remove(person);
+    createFloorGrid(width, depth, cellSize, color, parent) {
+        const points = [];
+        for (let i = 0; i <= width; i += cellSize) {
+            // Lines parallel to Z
+            points.push(i, 0, 0);
+            points.push(i, 0, depth);
+
+            // Lines parallel to X
+            points.push(0, 0, i);
+            points.push(width, 0, i);
         }
 
-        if (!personData || personData.length === 0) return;
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(points), 3));
+        const material = new THREE.LineBasicMaterial({ color: color });
+        const gridLines = new THREE.LineSegments(geometry, material);
+        parent.add(gridLines);
+    }
 
-        const p = personData[0]; // Show first person
-        const pos = p.position || [0, 0, 0];
+    createCeilingGrid(width, depth, height, cellSize, color, parent) {
+        const points = [];
+        for (let i = 0; i <= width; i += cellSize * 5) {
+            // Sparse ceiling grid
+            points.push(i, height, 0);
+            points.push(i, height, depth);
 
-        // Create person marker (cone pointing up)
-        const geometry = new THREE.ConeGeometry(0.5, 2, 8);
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        person = new THREE.Mesh(geometry, material);
-        person.position.set(pos[0], 1, pos[2]);
-        scene.add(person);
+            points.push(0, height, i);
+            points.push(width, height, i);
+        }
 
-        // Add skeleton if available
-        if (p.skeleton && p.skeleton.length > 0) {
-            this.updateSkeleton(p.skeleton);
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(points), 3));
+        const material = new THREE.LineBasicMaterial({ color: color });
+        const gridLines = new THREE.LineSegments(geometry, material);
+        parent.add(gridLines);
+    }
+
+    createRoomWalls(width, height, depth, parent) {
+        // Four corner walls - semi-transparent, showing room boundaries
+        const corners = [
+            [0, 0], [width, 0], [0, depth], [width, depth]
+        ];
+
+        corners.forEach(([x, z]) => {
+            const geometry = new THREE.BufferGeometry();
+            const wallPoints = [
+                x, 0, z,
+                x, height, z
+            ];
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(wallPoints), 3));
+            const material = new THREE.LineBasicMaterial({ color: 0x00aa00 });
+            const line = new THREE.Line(geometry, material);
+            parent.add(line);
+        });
+
+        // Perimeter lines at ground level - bright green
+        const perimeterPoints = [
+            0, 0, 0, width, 0, 0,  // Front wall
+            width, 0, 0, width, 0, depth,  // Right wall
+            width, 0, depth, 0, 0, depth,  // Back wall
+            0, 0, depth, 0, 0, 0   // Left wall
+        ];
+
+        const perimeterGeometry = new THREE.BufferGeometry();
+        perimeterGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(perimeterPoints), 3));
+        const perimeterMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
+        const perimeterLines = new THREE.LineSegments(perimeterGeometry, perimeterMaterial);
+        parent.add(perimeterLines);
+    }
+
+    createObstacle(pos, size, label, parent) {
+        const [x, y, z] = pos;
+        const [w, h, d] = size;
+
+        const geometry = new THREE.BoxGeometry(w, h, d);
+        const material = new THREE.LineBasicMaterial({ color: 0x884400 });
+        const edges = new THREE.EdgesGeometry(geometry);
+        const wireframe = new THREE.LineSegments(edges, material);
+        wireframe.position.set(x, y, z);
+        wireframe.userData.label = label;
+        parent.add(wireframe);
+    }
+
+    createReferenceMarkers(width, depth, parent) {
+        // Place markers every 5m for scale reference
+        for (let x = 5; x < width; x += 5) {
+            for (let z = 5; z < depth; z += 5) {
+                const geometry = new THREE.SphereGeometry(0.2, 8, 8);
+                const material = new THREE.MeshBasicMaterial({ color: 0x004444 });
+                const marker = new THREE.Mesh(geometry, material);
+                marker.position.set(x, 0.1, z);
+                parent.add(marker);
+            }
         }
     }
 
-    updateSkeleton(joints) {
+    updatePersonVisualization(personData) {
+        // Remove old person markers
+        scene.children.forEach(child => {
+            if (child.userData.isPersonMarker) {
+                scene.remove(child);
+            }
+        });
+
+        if (!personData || personData.length === 0) return;
+
+        // Show all detected persons
+        personData.forEach((p, idx) => {
+            const pos = p.position || [9, 0, 9];  // Default to center
+
+            // Create person marker (cone pointing up)
+            const geometry = new THREE.ConeGeometry(0.5, 2, 8);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: idx === 0 ? 0xff0000 : 0xff6600 // Primary person red, others orange
+            });
+            const cone = new THREE.Mesh(geometry, material);
+            cone.position.set(pos[0], 1, pos[2]);
+            cone.userData.isPersonMarker = true;
+            cone.userData.personId = p.id;
+            scene.add(cone);
+
+            // Add vertical line from ground to show height detection
+            const lineGeometry = new THREE.BufferGeometry();
+            lineGeometry.setAttribute('position', new THREE.BufferAttribute(
+                new Float32Array([pos[0], 0, pos[2], pos[0], 2, pos[2]]), 3
+            ));
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+            const line = new THREE.Line(lineGeometry, lineMaterial);
+            line.userData.isPersonMarker = true;
+            scene.add(line);
+
+            // Add position label annotation
+            this.addPersonLabel(pos, p, idx);
+
+            // Add skeleton if available
+            if (p.skeleton && p.skeleton.length > 0) {
+                this.updateSkeleton(p.skeleton, idx);
+            }
+        });
+    }
+
+    addPersonLabel(pos, personData, index) {
+        // Create a text label showing person ID, position, and confidence
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(0, 0, 256, 128);
+
+        // Border
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(0, 0, 256, 128);
+
+        // Text
+        ctx.fillStyle = '#ff0000';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Person #${personData.id}`, 10, 35);
+
+        ctx.fillStyle = '#ffff00';
+        ctx.font = '16px Arial';
+        ctx.fillText(`Pos: [${pos[0].toFixed(1)}, ${pos[1].toFixed(1)}, ${pos[2].toFixed(1)}]`, 10, 60);
+        ctx.fillText(`Conf: ${personData.confidence.toFixed(1)}%`, 10, 85);
+
+        // Create texture and sprite
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.position.set(pos[0], 3.5, pos[2]);
+        sprite.scale.set(2, 1, 1);
+        sprite.userData.isPersonMarker = true;
+        scene.add(sprite);
+    }
+
+    updateSkeleton(joints, personIndex) {
         // Remove old skeleton
-        if (skeleton) {
-            scene.remove(skeleton);
-        }
+        scene.children.forEach(child => {
+            if (child.userData.isSkeletonMarker) {
+                scene.remove(child);
+            }
+        });
 
         const skeletonGroup = new THREE.Group();
 
@@ -955,10 +1146,11 @@ class WiFiCSIMonitor {
         const jointGeometry = new THREE.SphereGeometry(0.1, 8, 8);
         const jointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
 
-        joints.forEach(joint => {
+        joints.forEach((joint, idx) => {
             if (joint && joint.length === 3) {
                 const sphere = new THREE.Mesh(jointGeometry, jointMaterial);
                 sphere.position.set(joint[0], joint[1], joint[2]);
+                sphere.userData.isSkeletonMarker = true;
                 skeletonGroup.add(sphere);
             }
         });
@@ -969,7 +1161,8 @@ class WiFiCSIMonitor {
             [1, 5], [5, 6], [6, 7], // Left arm
             [1, 8], [8, 9], [9, 10], // Right arm
             [1, 11], [11, 12], [12, 13], // Spine to left leg
-            [1, 14], [14, 15], [15, 16]  // Spine to right leg
+            [1, 14], [14, 15], [15, 16], // Spine to right leg
+            [11, 14] // Hips connection
         ];
 
         connections.forEach(([a, b]) => {
@@ -979,14 +1172,15 @@ class WiFiCSIMonitor {
                     new THREE.Vector3(joints[b][0], joints[b][1], joints[b][2])
                 ];
                 const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
-                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
                 const line = new THREE.Line(lineGeometry, lineMaterial);
+                line.userData.isSkeletonMarker = true;
                 skeletonGroup.add(line);
             }
         });
 
-        skeleton = skeletonGroup;
-        scene.add(skeleton);
+        skeletonGroup.userData.isSkeletonMarker = true;
+        scene.add(skeletonGroup);
     }
 
     animate() {
@@ -1173,6 +1367,7 @@ body {
 
 .scene-3d {
     padding: 0;
+    position: relative;
 }
 
 #scene-container {
@@ -1180,6 +1375,42 @@ body {
     height: 100%;
     background: #000;
 }
+
+/* Legend styling */
+.legend {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid #00ff00;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    max-width: 180px;
+    z-index: 10;
+}
+
+.legend-title {
+    font-weight: bold;
+    color: #00ff00;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #004400;
+    margin-bottom: 5px;
+}
+
+.legend-item {
+    padding: 3px 5px;
+    margin: 2px 0;
+    line-height: 1.4;
+}
+
+.color-x { color: #ff0000; font-weight: bold; }
+.color-y { color: #00ff00; font-weight: bold; }
+.color-z { color: #0088ff; font-weight: bold; }
+.color-grid { color: #004400; }
+.color-person { color: #ff0000; }
+.color-skeleton { color: #ffff00; }
+.color-furniture { color: #884400; }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
