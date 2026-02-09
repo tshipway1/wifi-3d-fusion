@@ -992,10 +992,9 @@ class WiFiCSIMonitor {
     animate() {
         animationFrameId = requestAnimationFrame(() => this.animate());
 
-        // Rotate room slightly for effect
-        if (room) {
-            room.rotation.y += 0.001;
-        }
+        // Static view - room and person stay fixed
+        // This makes it clear what's being detected
+        // User can rotate with mouse controls if you add that later
 
         renderer.render(scene, camera);
     }

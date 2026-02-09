@@ -53,3 +53,21 @@ training:
   data_augmentation: true
   device: auto
   save_interval: 10
+
+# Optional Bridges - Disabled by Default (Raspberry Pi optimization)
+bridges:
+  person_in_wifi_3d:
+    enabled: false  # Set to true to enable 3D body pose estimation from WiFi
+    checkpoint: env/weights/pwifi3d.pth
+    description: "3D pose from WiFi CSI - Best for cheap person sensors"
+  
+  nerf2:
+    enabled: false  # GPU intensive - not recommended for Pi
+    description: "Neural RF field rendering - Requires GPU"
+  
+  wifi_scanner_3d:
+    enabled: false  # For volumetric RSSI mapping
+    description: "3D WiFi scanner for RF volume capture"
+
+# NOTE: To enable these, set enabled: true and ensure checkpoint files exist in env/weights/
+# See QUICK_COMMANDS.md and docs/ for setup instructions
