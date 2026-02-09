@@ -770,9 +770,10 @@ class WebVisualizer:
                     <div class="legend-item"><span class="color-y">━</span> Y-Axis (Height)</div>
                     <div class="legend-item"><span class="color-z">━</span> Z-Axis (Blue)</div>
                     <div class="legend-item"><span class="color-grid">━</span> Floor Grid (1m)</div>
-                    <div class="legend-item"><span class="color-person">●</span> Person (0.5m)</div>
-                    <div class="legend-item"><span class="color-skeleton">●</span> Joints (Yellow)</div>
-                    <div class="legend-item"><span class="color-furniture">━</span> Furniture</div>
+                    <div class="legend-item"><span class="color-person">▲</span> Person Marker (WiFi Detection)</div>
+                    <div class="legend-item"><span class="color-person">◯</span> Detection Ring (Ground Level)</div>
+                    <div class="legend-item"><span class="color-skeleton">●</span> Skeleton Joints (Yellow)</div>
+                    <div class="legend-item"><span class="color-furniture">━</span> Furniture/Obstacles</div>
                     <div class="legend-item">🏠 Room: 18×18×8m</div>
                 </div>
             </div>
@@ -1186,23 +1187,43 @@ class WiFiCSIMonitor {
         personData.forEach((p, idx) => {
             const pos = p.position || [9, 0, 9];  // Default to center
 
-            // Create person marker (cone pointing up)
-            const geometry = new THREE.ConeGeometry(0.5, 2, 8);
+            // Create semi-transparent person marker (cone) - positioned below to not block skeleton
+            const geometry = new THREE.ConeGeometry(0.35, 0.8, 8);
             const material = new THREE.MeshBasicMaterial({ 
-                color: idx === 0 ? 0xff0000 : 0xff6600 // Primary person red, others orange
+                color: idx === 0 ? 0xff0000 : 0xff6600, // Primary person red, others orange
+                transparent: true,
+                opacity: 0.4  // Semi-transparent so you see skeleton through it
             });
             const cone = new THREE.Mesh(geometry, material);
-            cone.position.set(pos[0], 1, pos[2]);
+            cone.position.set(pos[0], 0.4, pos[2]); // Lower position, doesn't block skeleton
             cone.userData.isPersonMarker = true;
             cone.userData.personId = p.id;
             scene.add(cone);
 
-            // Add vertical line from ground to show height detection
+            // Add bright outline circle at ground level to show detection
+            const circleGeometry = new THREE.BufferGeometry();
+            const circlePoints = [];
+            const radius = 0.4;
+            for (let i = 0; i <= 32; i++) {
+                const angle = (i / 32) * Math.PI * 2;
+                circlePoints.push(
+                    pos[0] + radius * Math.cos(angle),
+                    0.02,
+                    pos[2] + radius * Math.sin(angle)
+                );
+            }
+            circleGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(circlePoints), 3));
+            const circleMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
+            const circle = new THREE.Line(circleGeometry, circleMaterial);
+            circle.userData.isPersonMarker = true;
+            scene.add(circle);
+
+            // Add vertical reference line from ground through person
             const lineGeometry = new THREE.BufferGeometry();
             lineGeometry.setAttribute('position', new THREE.BufferAttribute(
-                new Float32Array([pos[0], 0, pos[2], pos[0], 2, pos[2]]), 3
+                new Float32Array([pos[0], 0, pos[2], pos[0], 1.8, pos[2]]), 3
             ));
-            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff4444, linewidth: 1 });
             const line = new THREE.Line(lineGeometry, lineMaterial);
             line.userData.isPersonMarker = true;
             scene.add(line);
@@ -2205,11 +2226,11 @@ class WiFi3DFusion:
                 confidence = min(95.0, confidence * 100)  # Scale to percentage
                 
                 # Generate position based on signal characteristics
-                # Use realistic coordinates based on the detected patterns
+                # Use realistic coordinates distributed across the 18x18m room (Y=height 0-1.7m)
                 position = np.array([
-                    1.30 + np.random.uniform(-1.0, 1.0),  # x position (around 1.30)
-                    0.0 + np.random.uniform(-0.5, 0.5),   # y position (center)
-                    8.42 + np.random.uniform(-1.0, 1.0)   # z position (around 8.42)
+                    np.random.uniform(1.0, 17.0),   # x position across room width (1-17m)
+                    np.random.uniform(0.0, 1.7),    # y position (height 0-1.7m for standing person)
+                    np.random.uniform(1.0, 17.0)    # z position across room depth (1-17m)
                 ])
                 
                 # Generate more realistic skeleton with proper proportions
