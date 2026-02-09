@@ -732,167 +732,75 @@ class WebVisualizer:
         logger.info("✅ Visualization files created successfully")
     
     def _create_html(self):
-        """Create index.html"""
+        """Create index.html - WiFi CSI Monitor v3.0 interface"""
         html_content = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WiFi-3D-Fusion Dashboard</title>
+    <title>WiFi CSI Monitor v3.0</title>
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>📡 WiFi-3D-Fusion Dashboard</h1>
-            <div class="status-indicator">
-                <span id="status" class="status-active">● Live</span>
-                <span id="frame-counter">Frames: 0</span>
+    <div class="monitor-container">
+        <!-- Header -->
+        <div class="monitor-header">
+            <div class="header-title">📡 WiFi CSI Monitor v3.0 🔬</div>
+            <div class="header-status">
+                ⚡ <span id="signal-status">SIGNAL ACTIVE</span> ⚡
             </div>
-        </header>
+        </div>
 
-        <main class="main-content">
-            <div class="grid-layout">
-                <!-- 3D Visualization Panel -->
-                <section class="panel 3d-panel">
-                    <h2>3D Environment</h2>
-                    <div id="canvas-container" class="canvas-3d">
-                        <canvas id="3d-canvas"></canvas>
-                    </div>
-                </section>
-
-                <!-- Metrics Panel -->
-                <section class="panel metrics-panel">
-                    <h2>System Metrics</h2>
-                    <div class="metrics-grid">
-                        <div class="metric">
-                            <label>FPS</label>
-                            <span id="fps-value">0</span>
-                        </div>
-                        <div class="metric">
-                            <label>Data Rate</label>
-                            <span id="datarate-value">0</span> MB/s
-                        </div>
-                        <div class="metric">
-                            <label>Signal Strength</label>
-                            <span id="signal-value">0</span> dBm
-                        </div>
-                        <div class="metric">
-                            <label>Detected Persons</label>
-                            <span id="persons-value">0</span>
-                        </div>
-                        <div class="metric">
-                            <label>CPU Usage</label>
-                            <span id="cpu-value">0</span> %
-                        </div>
-                        <div class="metric">
-                            <label>Memory Usage</label>
-                            <span id="memory-value">0</span> GB
-                        </div>
-                        <div class="metric">
-                            <label>Temperature</label>
-                            <span id="temp-value">0</span> °C
-                        </div>
-                        <div class="metric">
-                            <label>Uptime</label>
-                            <span id="uptime-value">0</span>s
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Detection Panel -->
-                <section class="panel detection-panel">
-                    <h2>Detection Analytics</h2>
-                    <div class="detection-stats">
-                        <div class="stat-box">
-                            <span class="label">Total Detections</span>
-                            <span id="total-detections" class="value">0</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="label">Average Confidence</span>
-                            <span id="avg-confidence" class="value">0%</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="label">Tracking Stability</span>
-                            <span id="tracking-stability" class="value">0%</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="label">False Positive Rate</span>
-                            <span id="false-positive" class="value">0%</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="label">Detection Range</span>
-                            <span id="detection-range" class="value">0</span>m
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Environment Panel -->
-                <section class="panel env-panel">
-                    <h2>Environmental Analysis</h2>
-                    <div class="env-stats">
-                        <div class="env-item">
-                            <span class="label">Interference Level</span>
-                            <div class="progress-bar">
-                                <div id="interference-bar" class="progress-fill"></div>
-                            </div>
-                            <span id="interference-value">0%</span>
-                        </div>
-                        <div class="env-item">
-                            <span class="label">Multipath Effects</span>
-                            <div class="progress-bar">
-                                <div id="multipath-bar" class="progress-fill"></div>
-                            </div>
-                            <span id="multipath-value">0%</span>
-                        </div>
-                        <div class="env-item">
-                            <span class="label">SNR</span>
-                            <div class="progress-bar">
-                                <div id="snr-bar" class="progress-fill"></div>
-                            </div>
-                            <span id="snr-value">0 dB</span>
-                        </div>
-                        <div class="env-item">
-                            <span class="label">Channel Quality: <span id="channel-quality">UNKNOWN</span></span>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Activity Log -->
-                <section class="panel activity-panel">
-                    <h2>Activity Log</h2>
-                    <div id="activity-log" class="activity-log">
-                        <p class="placeholder">Waiting for activity...</p>
-                    </div>
-                </section>
-
-                <!-- CSI Data Visualization -->
-                <section class="panel csi-panel">
-                    <h2>CSI Data (3D Points)</h2>
-                    <canvas id="csi-chart" class="charts"></canvas>
-                </section>
-
-                <!-- Performance Chart -->
-                <section class="panel performance-panel">
-                    <h2>Performance Trends</h2>
-                    <canvas id="performance-chart" class="charts"></canvas>
-                </section>
-
-                <!-- Detector List -->
-                <section class="panel detector-panel">
-                    <h2>Detected Persons</h2>
-                    <div id="detector-list" class="detector-items">
-                        <p class="placeholder">No detections yet</p>
-                    </div>
-                </section>
+        <!-- Main Grid -->
+        <div class="monitor-grid">
+            <!-- Row 1: CSI Analytics + 3D View + System Metrics -->
+            <div class="panel csi-analytics">
+                <div class="panel-title">📊 CSI Analytics</div>
+                <div class="panel-content">
+                    <div class="status-line">CSI: <span id="csi-status">Processing</span></div>
+                    <div class="status-line">Persons: <span id="persons-detected">0</span> detected</div>
+                    <div class="status-line">Skeletons: <span id="skeletons-active">0</span> active</div>
+                    <div class="status-line"><span id="timestamp">Loading...</span></div>
+                </div>
             </div>
-        </main>
 
-        <footer class="footer">
-            <p>WiFi-3D-Fusion v1.0 | Real-time WiFi-based 3D Perception | Last Updated: <span id="last-update">--:--:--</span></p>
-        </footer>
+            <div class="panel scene-3d">
+                <div id="scene-container"></div>
+            </div>
+
+            <div class="panel system-metrics">
+                <div class="panel-title">📈 System Metrics</div>
+                <div class="panel-content">
+                    <div class="metric-line">═══ SYSTEM METRICS ═══</div>
+                    <div class="metric-line">FPS: <span id="fps">0.0</span> f/s</div>
+                    <div class="metric-line">CPU: <span id="cpu">0.0</span>%</div>
+                    <div class="metric-line">Memory: <span id="memory">0.0</span> MB</div>
+                </div>
+            </div>
+
+            <!-- Row 2: Person Detection + Skeleton Analysis + Activity Log -->
+            <div class="panel person-detection">
+                <div class="panel-title">👤 Person Detection</div>
+                <div class="panel-content" id="person-list">
+                    <div class="status-line">No persons detected</div>
+                </div>
+            </div>
+
+            <div class="panel skeleton-analysis">
+                <div class="panel-title">🦴 Skeleton Analysis</div>
+                <div class="panel-content" id="skeleton-info">
+                    <div class="status-line">Waiting for skeleton data...</div>
+                </div>
+            </div>
+
+            <div class="panel activity-log">
+                <div class="panel-title">📋 Activity Log</div>
+                <div class="panel-content" id="activity-content">
+                    <div class="log-line">System initialized</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="/js/app.js"></script>
@@ -903,89 +811,193 @@ class WebVisualizer:
             f.write(html_content)
     
     def _create_app_js(self):
-        """Create app.js"""
-        js_content = '''// WiFi-3D-Fusion Dashboard JavaScript
-const UPDATE_INTERVAL = 500; // 500ms
-let performanceChart = null;
-let dataHistory = [];
-let frameCount = 0;
+        """Create app.js with Three.js wireframe 3D visualization"""
+        js_content = '''// WiFi CSI Monitor v3.0 with Three.js
+const UPDATE_INTERVAL = 200; // 200ms = 5 FPS
 
-class Dashboard {
+// Three.js scene globals
+let scene, camera, renderer, room, person, skeleton;
+let animationFrameId;
+
+class WiFiCSIMonitor {
     constructor() {
         this.lastUpdate = Date.now();
-        this.frameData = null;
         this.init();
     }
 
     init() {
-        this.setupCharts();
+        this.init3DScene();
         this.startPolling();
     }
 
-    setupCharts() {
-        // Performance chart
-        const perfCtx = document.getElementById('performance-chart')?.getContext('2d');
-        if (perfCtx) {
-            performanceChart = new Chart(perfCtx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [
-                        {
-                            label: 'FPS',
-                            data: [],
-                            borderColor: '#00ff00',
-                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'CPU %',
-                            data: [],
-                            borderColor: '#ff6b6b',
-                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: {
-                                color: '#00ff00'
-                            },
-                            grid: {
-                                color: 'rgba(0, 255, 0, 0.1)'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                color: '#00ff00'
-                            },
-                            grid: {
-                                color: 'rgba(0, 255, 0, 0.1)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#00ff00'
-                            }
-                        }
-                    }
-                }
+    init3DScene() {
+        const container = document.getElementById('scene-container');
+        if (!container) return;
+
+        // Scene setup
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+
+        // Camera
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+        camera.position.set(15, 12, 15);
+        camera.lookAt(0, 0, 0);
+
+        // Renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(width, height);
+        container.appendChild(renderer.domElement);
+
+        // Grid floor (animated CSI noise pattern)
+        const gridHelper = new THREE.GridHelper(20, 20, 0x00ff00, 0x004400);
+        scene.add(gridHelper);
+
+        // Wireframe room/environment
+        this.createWireframeRoom();
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x00ff00, 0.3);
+        scene.add(ambientLight);
+        
+        const pointLight = new THREE.PointLight(0x00ff00, 0.7);
+        pointLight.position.set(5, 10, 5);
+        scene.add(pointLight);
+
+        // Start animation loop
+        this.animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        });
+    }
+
+    createWireframeRoom() {
+        // Create wireframe boxes representing room/environment
+        const roomGroup = new THREE.Group();
+
+        // Main room wireframe
+        const roomGeometry = new THREE.BoxGeometry(18, 8, 18);
+        const roomMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0x00ff00, 
+            wireframe: true, 
+            transparent: true, 
+            opacity: 0.3 
+        });
+        const roomMesh = new THREE.Mesh(roomGeometry, roomMaterial);
+        roomMesh.position.y = 4;
+        roomGroup.add(roomMesh);
+
+        // Smaller boxes for furniture/obstacles
+        const boxPositions = [
+            { x: -6, y: 1, z: -6, w: 3, h: 2, d: 3 },
+            { x: 6, y: 1.5, z: 6, w: 4, h: 3, d: 4 },
+            { x: -7, y: 0.5, z: 7, w: 2, h: 1, d: 2 },
+            { x: 7, y: 2, z: -7, w: 3, h: 4, d: 3 }
+        ];
+
+        boxPositions.forEach(pos => {
+            const geometry = new THREE.BoxGeometry(pos.w, pos.h, pos.d);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0x00aa00, 
+                wireframe: true, 
+                transparent: true, 
+                opacity: 0.4 
             });
+            const box = new THREE.Mesh(geometry, material);
+            box.position.set(pos.x, pos.y, pos.z);
+            roomGroup.add(box);
+        });
+
+        room = roomGroup;
+        scene.add(room);
+    }
+
+    updatePersonVisualization(personData) {
+        // Remove old person marker
+        if (person) {
+            scene.remove(person);
+        }
+
+        if (!personData || personData.length === 0) return;
+
+        const p = personData[0]; // Show first person
+        const pos = p.position || [0, 0, 0];
+
+        // Create person marker (cone pointing up)
+        const geometry = new THREE.ConeGeometry(0.5, 2, 8);
+        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        person = new THREE.Mesh(geometry, material);
+        person.position.set(pos[0], 1, pos[2]);
+        scene.add(person);
+
+        // Add skeleton if available
+        if (p.skeleton && p.skeleton.length > 0) {
+            this.updateSkeleton(p.skeleton);
         }
     }
 
-    startPolling() {
-        setInterval(() => this.updateData(), UPDATE_INTERVAL);
+    updateSkeleton(joints) {
+        // Remove old skeleton
+        if (skeleton) {
+            scene.remove(skeleton);
+        }
+
+        const skeletonGroup = new THREE.Group();
+
+        // Draw joints as small spheres
+        const jointGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+        const jointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+
+        joints.forEach(joint => {
+            if (joint && joint.length === 3) {
+                const sphere = new THREE.Mesh(jointGeometry, jointMaterial);
+                sphere.position.set(joint[0], joint[1], joint[2]);
+                skeletonGroup.add(sphere);
+            }
+        });
+
+        // Connect joints with lines (basic skeleton structure)
+        const connections = [
+            [0, 1], [1, 2], [2, 3], [3, 4], // Head to shoulders
+            [1, 5], [5, 6], [6, 7], // Left arm
+            [1, 8], [8, 9], [9, 10], // Right arm
+            [1, 11], [11, 12], [12, 13], // Spine to left leg
+            [1, 14], [14, 15], [15, 16]  // Spine to right leg
+        ];
+
+        connections.forEach(([a, b]) => {
+            if (joints[a] && joints[b] && joints[a].length === 3 && joints[b].length === 3) {
+                const points = [
+                    new THREE.Vector3(joints[a][0], joints[a][1], joints[a][2]),
+                    new THREE.Vector3(joints[b][0], joints[b][1], joints[b][2])
+                ];
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                skeletonGroup.add(line);
+            }
+        });
+
+        skeleton = skeletonGroup;
+        scene.add(skeleton);
+    }
+
+    animate() {
+        animationFrameId = requestAnimationFrame(() => this.animate());
+
+        // Rotate room slightly for effect
+        if (room) {
+            room.rotation.y += 0.001;
+        }
+
+        renderer.render(scene, camera);
     }
 
     async updateData() {
@@ -994,226 +1006,69 @@ class Dashboard {
             const data = await response.json();
 
             if (data.error) {
-                this.setStatus('offline');
+                document.getElementById('signal-status').textContent = 'SIGNAL LOST';
                 return;
             }
 
-            this.setStatus('online');
-            this.frameData = data;
-            frameCount = data.frame_id || 0;
+            document.getElementById('signal-status').textContent = 'SIGNAL ACTIVE';
 
-            // Update all dashboard elements
-            this.updateMetrics(data);
-            this.updateDetectors(data);
-            this.updateCharts(data);
-            this.updateEnvironment(data);
-            this.updateActivity(data);
-            this.update3DVisualization(data);
+            // Update CSI Analytics
+            document.getElementById('csi-status').textContent = data.csi_active ? 'Active' : 'Processing';
+            document.getElementById('persons-detected').textContent = data.persons?.length || 0;
+            document.getElementById('skeletons-active').textContent = data.skeletons?.length || 0;
+            document.getElementById('timestamp').textContent = new Date().toLocaleTimeString();
 
-            document.getElementById('frame-counter').textContent = `Frames: ${frameCount}`;
-            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
-        } catch (error) {
-            console.error('Failed to fetch data:', error);
-            this.setStatus('offline');
-        }
-    }
+            // Update System Metrics
+            document.getElementById('fps').textContent = data.fps?.toFixed(1) || '0.0';
+            document.getElementById('cpu').textContent = data.system_metrics?.cpu_usage?.toFixed(1) || '0.0';
+            document.getElementById('memory').textContent = data.system_metrics?.memory_usage?.toFixed(1) || '0.0';
 
-    updateMetrics(data) {
-        const metrics = {
-            'fps-value': data.fps?.toFixed(1) || '0',
-            'datarate-value': data.data_rate?.toFixed(2) || '0',
-            'signal-value': data.signal_strength?.toFixed(1) || '0',
-            'persons-value': data.persons?.length || '0',
-            'cpu-value': data.system_metrics?.cpu_usage?.toFixed(1) || '0',
-            'memory-value': data.system_metrics?.memory_usage?.toFixed(2) || '0',
-            'temp-value': data.system_metrics?.temperature?.toFixed(1) || '0',
-            'uptime-value': Math.floor(data.system_metrics?.uptime || 0)
-        };
-
-        Object.entries(metrics).forEach(([id, value]) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = value;
-        });
-    }
-
-    updateDetectors(data) {
-        const list = document.getElementById('detector-list');
-        if (!data.persons || data.persons.length === 0) {
-            list.innerHTML = '<p class="placeholder">No detections yet</p>';
-            return;
-        }
-
-        list.innerHTML = data.persons.map(person => `
-            <div class="detector-item">
-                <div class="detector-info">
-                    <span class="id">Person #${person.id}</span>
-                    <span class="confidence" style="background: ${this.getColorForConfidence(person.confidence)}">
-                        ${(person.confidence * 100).toFixed(0)}%
-                    </span>
-                </div>
-                <div class="position">
-                    Pos: [${person.position?.map(p => p.toFixed(2)).join(', ') || 'N/A'}]
-                </div>
-            </div>
-        `).join('');
-    }
-
-    updateCharts(data) {
-        if (!performanceChart) return;
-
-        const now = new Date().toLocaleTimeString();
-        performanceChart.data.labels.push(now);
-        performanceChart.data.datasets[0].data.push(data.fps?.toFixed(1) || 0);
-        performanceChart.data.datasets[1].data.push(data.system_metrics?.cpu_usage?.toFixed(1) || 0);
-
-        // Keep only last 20 data points
-        if (performanceChart.data.labels.length > 20) {
-            performanceChart.data.labels.shift();
-            performanceChart.data.datasets.forEach(ds => ds.data.shift());
-        }
-
-        performanceChart.update('none');
-    }
-
-    updateEnvironment(data) {
-        if (!data.environmental_analysis) return;
-
-        const env = data.environmental_analysis;
-        const stats = {
-            'interference-bar': Math.min(env.interference_level * 100 || 0, 100),
-            'interference-value': (env.interference_level * 100).toFixed(0) + '%',
-            'multipath-bar': Math.min(env.multipath_effects * 100 || 0, 100),
-            'multipath-value': (env.multipath_effects * 100).toFixed(0) + '%',
-            'snr-bar': Math.min((env.snr_db / 50) * 100 || 0, 100),
-            'snr-value': env.snr_db?.toFixed(1) + ' dB',
-            'channel-quality': env.channel_quality || 'UNKNOWN'
-        };
-
-        Object.entries(stats).forEach(([id, value]) => {
-            const el = document.getElementById(id);
-            if (el) {
-                if (id.includes('bar')) {
-                    el.style.width = value + '%';
-                } else {
-                    el.textContent = value;
-                }
-            }
-        });
-    }
-
-    updateActivity(data) {
-        const log = document.getElementById('activity-log');
-        if (!data.activity || data.activity.length === 0) return;
-
-        log.innerHTML = data.activity.slice(-10).reverse().map(activity => `
-            <div class="activity-item">
-                <span class="time">${activity.timestamp}</span>
-                <span class="message">${activity.message}</span>
-            </div>
-        `).join('');
-    }
-
-    update3DVisualization(data) {
-        const canvas = document.getElementById('3d-canvas');
-        if (!canvas) return;
-
-        // Draw simple 3D representation using canvas
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width = canvas.offsetWidth;
-        const height = canvas.height = canvas.offsetHeight;
-
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(0, 0, width, height);
-
-        // Draw grid
-        ctx.strokeStyle = '#00ff0030';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < width; i += 50) {
-            ctx.beginPath();
-            ctx.moveTo(i, 0);
-            ctx.lineTo(i, height);
-            ctx.stroke();
-        }
-        for (let i = 0; i < height; i += 50) {
-            ctx.beginPath();
-            ctx.moveTo(0, i);
-            ctx.lineTo(width, i);
-            ctx.stroke();
-        }
-
-        // Draw detected persons
-        if (data.persons && data.persons.length > 0) {
-            data.persons.forEach(person => {
-                const x = (width / 2) + (person.position[0] * 20);
-                const y = (height / 2) + (person.position[1] * 20);
-                
-                const color = this.getColorForConfidence(person.confidence);
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.arc(x, y, 15, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 12px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(`#${person.id}`, x, y);
-            });
-        }
-
-        // Draw CSI points
-        if (data.csi_data && data.csi_data.length > 0) {
-            ctx.fillStyle = '#0099ff60';
-            data.csi_data.forEach(point => {
-                const x = (width / 2) + (point[0] * 10);
-                const y = (height / 2) + (point[1] * 10);
-                ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-    }
-
-    updateDetectionAnalytics(data) {
-        if (!data.detection_analytics) return;
-
-        const analytics = {
-            'total-detections': data.detection_analytics.total_detections || 0,
-            'avg-confidence': ((data.detection_analytics.average_confidence || 0) * 100).toFixed(0) + '%',
-            'tracking-stability': ((data.detection_analytics.tracking_stability || 0) * 100).toFixed(0) + '%',
-            'false-positive': ((data.detection_analytics.false_positive_rate || 0) * 100).toFixed(2) + '%',
-            'detection-range': data.detection_analytics.detection_range_m?.toFixed(1) || '0'
-        };
-
-        Object.entries(analytics).forEach(([id, value]) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = value;
-        });
-    }
-
-    setStatus(status) {
-        const statusEl = document.getElementById('status');
-        if (statusEl) {
-            if (status === 'online') {
-                statusEl.className = 'status-active';
-                statusEl.textContent = '● Live';
+            // Update Person Detection
+            const personList = document.getElementById('person-list');
+            if (data.persons && data.persons.length > 0) {
+                personList.innerHTML = data.persons.map(p => 
+                    `<div class="status-line">Person #${p.id}: ${(p.confidence * 100).toFixed(1)}% conf</div>`
+                ).join('');
             } else {
-                statusEl.className = 'status-inactive';
-                statusEl.textContent = '● Offline';
+                personList.innerHTML = '<div class="status-line">No persons detected</div>';
             }
+
+            // Update Skeleton Analysis
+            const skeletonInfo = document.getElementById('skeleton-info');
+            if (data.skeletons && data.skeletons.length > 0) {
+                const firstSkeleton = data.skeletons[0];
+                const jointCount = Array.isArray(firstSkeleton) ? firstSkeleton.length : 0;
+                skeletonInfo.innerHTML = `<div class="status-line">Skeleton #${data.persons[0].id}: ${jointCount} joints</div>`;
+            } else {
+                skeletonInfo.innerHTML = '<div class="status-line">Waiting for skeleton data...</div>';
+            }
+
+            // Update Activity Log
+            const activityContent = document.getElementById('activity-content');
+            if (data.activity && data.activity.length > 0) {
+                activityContent.innerHTML = data.activity.slice(-8).reverse().map(a => 
+                    `<div class="log-line">${a.timestamp} PM: CSI: ${(data.detection_analytics?.total_detections || 0)} points | Persons: ${data.persons?.length || 0} | Skeletons: ${data.skeletons?.length || 0}</div>`
+                ).join('');
+            }
+
+            // Update 3D visualization
+            this.updatePersonVisualization(data.persons);
+
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            document.getElementById('signal-status').textContent = 'ERROR';
         }
     }
 
-    getColorForConfidence(confidence) {
-        if (confidence >= 0.9) return '#00ff00';
-        if (confidence >= 0.7) return '#ffff00';
-        if (confidence >= 0.5) return '#ff9900';
-        return '#ff0000';
+    startPolling() {
+        setInterval(() => this.updateData(), UPDATE_INTERVAL);
+        this.updateData(); // Initial update
     }
 }
 
-// Initialize dashboard on page load
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    new Dashboard();
+    new WiFiCSIMonitor();
 });'''
         
         os.makedirs(os.path.join(self.visualization_path, 'js'), exist_ok=True)
@@ -1221,322 +1076,110 @@ document.addEventListener('DOMContentLoaded', () => {
             f.write(js_content)
     
     def _create_style_css(self):
-        """Create style.css"""
-        css_content = '''/* WiFi-3D-Fusion Dashboard Styles */
+        """Create style.css - Terminal/Monitor style"""
+        css_content = '''/* WiFi CSI Monitor v3.0 - Terminal Style */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-:root {
-    --primary-color: #00ff00;
-    --secondary-color: #0099ff;
-    --accent-color: #ff6b6b;
-    --dark-bg: #0a0e27;
-    --panel-bg: #1a1f3a;
-    --border-color: #00ff0040;
-    --text-color: #00ff00;
-    --text-secondary: #00aa00;
-}
-
-html, body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+body {
+    background: #000;
+    color: #00ff00;
     font-family: 'Courier New', monospace;
-    background: var(--dark-bg);
-    color: var(--text-color);
+    overflow: hidden;
 }
 
-.container {
+.monitor-container {
+    width: 100vw;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-    overflow: hidden;
+    padding: 10px;
+    background: linear-gradient(to bottom, #001100 0%, #000000 100%);
 }
 
-.header {
-    background: linear-gradient(90deg, #00ff0020 0%, #0099ff20 100%);
-    border-bottom: 2px solid var(--primary-color);
-    padding: 15px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    backdrop-filter: blur(10px);
-}
-
-.header h1 {
-    font-size: 24px;
-    text-shadow: 0 0 10px var(--primary-color);
-    font-weight: bold;
-}
-
-.status-indicator {
-    display: flex;
-    gap: 20px;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.status-active {
-    color: var(--primary-color);
-    text-shadow: 0 0 10px var(--primary-color);
-}
-
-.status-inactive {
-    color: #ff0000;
-    text-shadow: 0 0 10px #ff0000;
-}
-
-.main-content {
-    flex: 1;
-    overflow-y: auto;
+.monitor-header {
+    text-align: center;
     padding: 15px;
-    background: var(--dark-bg);
+    border: 2px solid #00ff00;
+    background: #001100;
+    margin-bottom: 10px;
 }
 
-.grid-layout {
+.header-title {
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 10px #00ff00;
+    letter-spacing: 2px;
+}
+
+.header-status {
+    font-size: 14px;
+    margin-top: 5px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.monitor-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 15px;
-    grid-auto-rows: max-content;
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+    flex: 1;
+    overflow: hidden;
 }
 
 .panel {
-    background: var(--panel-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    padding: 20px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 255, 0, 0.1);
-    transition: all 0.3s ease;
-}
-
-.panel:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 8px 32px rgba(0, 255, 0, 0.3);
-}
-
-.panel h2 {
-    color: var(--primary-color);
-    margin-bottom: 15px;
-    font-size: 18px;
-    text-shadow: 0 0 5px var(--primary-color);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
-}
-
-.3d-panel {
-    grid-column: span 2;
-    min-height: 350px;
-}
-
-.canvas-3d {
-    width: 100%;
-    height: 300px;
-    background: #000;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-#3d-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.metric {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+    border: 2px solid #00ff00;
+    background: rgba(0, 17, 0, 0.8);
     padding: 10px;
-    background: rgba(0, 255, 0, 0.05);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-
-.metric label {
-    font-size: 12px;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-}
-
-.metric span {
-    font-size: 16px;
-    font-weight: bold;
-    color: var(--primary-color);
-    text-shadow: 0 0 5px var(--primary-color);
-}
-
-.detection-stats, .env-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 10px;
-}
-
-.stat-box {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px;
-    background: rgba(0, 99, 255, 0.05);
-    border: 1px solid var(--secondary-color);
-    border-radius: 4px;
-    text-align: center;
-}
-
-.stat-box .label {
-    font-size: 11px;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-}
-
-.stat-box .value {
-    font-size: 18px;
-    font-weight: bold;
-    color: var(--secondary-color);
-    text-shadow: 0 0 5px var(--secondary-color);
-}
-
-.env-item {
-    margin-bottom: 12px;
-}
-
-.env-item .label {
-    display: block;
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-bottom: 5px;
-    text-transform: uppercase;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 20px;
-    background: rgba(0, 255, 0, 0.1);
-    border: 1px solid var(--border-color);
-    border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 5px;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-    width: 0%;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px var(--primary-color);
-}
-
-.env-item > span:last-child {
-    font-size: 12px;
-    color: var(--primary-color);
-    font-weight: bold;
-}
-
-.activity-log {
-    max-height: 200px;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
 }
 
-.activity-item {
-    display: flex;
-    gap: 10px;
-    padding: 8px;
-    background: rgba(0, 255, 0, 0.05);
-    border-left: 3px solid var(--primary-color);
-    border-radius: 2px;
-    font-size: 12px;
-}
-
-.activity-item .time {
-    color: var(--secondary-color);
+.panel-title {
+    font-size: 14px;
     font-weight: bold;
-    min-width: 60px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #00ff00;
+    margin-bottom: 10px;
+    text-shadow: 0 0 5px #00ff00;
 }
 
-.activity-item .message {
-    color: var(--text-secondary);
+.panel-content {
     flex: 1;
-    word-break: break-word;
-}
-
-.placeholder {
-    color: var(--text-secondary);
-    text-align: center;
-    padding: 20px;
-    font-style: italic;
-}
-
-.charts {
-    width: 100%;
-    height: 250px;
-}
-
-.detector-items {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 250px;
     overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.6;
 }
 
-.detector-item {
-    padding: 10px;
-    background: rgba(0, 99, 255, 0.05);
-    border: 1px solid var(--secondary-color);
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.status-line, .metric-line, .log-line {
+    padding: 3px 0;
+    border-left: 2px solid #004400;
+    padding-left: 8px;
+    margin-bottom: 4px;
 }
 
-.detector-info {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.detector-item .id {
-    color: var(--primary-color);
+.status-line span, .metric-line span {
+    color: #ffff00;
     font-weight: bold;
 }
 
-.detector-item .confidence {
-    padding: 3px 8px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-weight: bold;
-    color: #000;
-    text-shadow: none;
+.scene-3d {
+    padding: 0;
 }
 
-.detector-item .position {
-    font-size: 11px;
-    color: var(--text-secondary);
-    text-align: right;
-}
-
-.footer {
-    background: linear-gradient(90deg, #00ff0020 0%, #0099ff20 100%);
-    border-top: 2px solid var(--primary-color);
-    padding: 10px 25px;
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-secondary);
-    backdrop-filter: blur(10px);
+#scene-container {
+    width: 100%;
+    height: 100%;
+    background: #000;
 }
 
 /* Scrollbar styling */
@@ -1545,55 +1188,28 @@ html, body {
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--panel-bg);
+    background: #001100;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--primary-color);
+    background: #00ff00;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--secondary-color);
+    background: #00ff00;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-    .grid-layout {
+/* Responsive */
+@media (max-width: 1200px) {
+    .monitor-grid {
         grid-template-columns: 1fr;
+        grid-template-rows: repeat(6, 1fr);
     }
-
-    .3d-panel {
-        grid-column: span 1;
-    }
-
-    .header {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .header h1 {
+    
+    .header-title {
         font-size: 18px;
     }
-
-    .metrics-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-/* Animations */
-@keyframes glow {
-    0%, 100% {
-        text-shadow: 0 0 5px var(--primary-color);
-    }
-    50% {
-        text-shadow: 0 0 20px var(--primary-color);
-    }
-}
-
-.metric span:hover,
-.stat-box .value:hover {
-    animation: glow 1s infinite;
 }'''
         
         os.makedirs(os.path.join(self.visualization_path, 'css'), exist_ok=True)
