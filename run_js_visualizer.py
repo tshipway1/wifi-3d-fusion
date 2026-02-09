@@ -531,136 +531,130 @@ class ReIDBridge:
         logger.info(f"✅ TRAINING COMPLETED: {len(self.identities)} identities updated")
 
     def generate_skeleton(self, position: np.ndarray, variance: float = 0.0) -> np.ndarray:
-        """Generate a skeleton for a person based on their position and signal variance"""
-        # Generate skeleton that changes slightly over time
-        random.seed(int(time.time() / 2))  # Change slightly over time
+        """Generate a realistic standing skeleton for a person based on their position"""
+        # Position: [X, Y, Z] where Y is height/vertical coordinate
+        base_x = position[0]     # Left-right position
+        base_y = position[1]     # Height at detection point (around 0.8m for torso)
+        base_z = position[2]     # Front-back position
         
-        # Basic skeleton with 25 joints (x, y, z) - similar to COCO format
-        # Each joint is [x, y, z] where:
-        # - x, y, z are in 3D space using real-world coordinates
+        # Human proportions (total standing height ~1.7m)
+        total_height = 1.7 + variance * 0.3
         
-        # Base position from detection
-        base_x = position[0]
-        base_y = position[1] if len(position) > 2 else 0.0
-        base_z = position[2] if len(position) > 2 else position[1]
+        # Generate anatomically correct skeleton
+        # Heights are absolute Y values (ground = 0, head ≈ 1.7m)
+        random.seed(int(time.time() / 2))  # Vary over time
         
-        # Add random height variation (1.5m to 1.9m)
-        height = 1.7 + variance * 0.3
+        # Calculate shoulder width based on height
+        shoulder_width = 0.20
         
-        # Create a basic humanoid skeleton with realistic proportions
-        height = 1.7 + variance * 0.3  # Height (1.7-2.0m) based on variance
-        width = height * 0.25  # Shoulder width proportional to height
+        # Add subtle swaying motion
+        time_factor = time.time() % 3.0
+        sway_x = np.sin(time_factor * np.pi) * 0.05
         
-        # Add slight variation to ensure unique skeletons
-        unique_factor = random.random() * 0.05
-        height += unique_factor
+        # **FEET** - on ground (Y=0)
+        l_foot = np.array([base_x - 0.12, 0.0, base_z + 0.05])
+        r_foot = np.array([base_x + 0.12, 0.0, base_z + 0.05])
         
-        # Generate joints with natural human proportions and position variations
-        # Apply realistic posture based on random type
-        posture_type = random.randint(0, 3)  # 4 different posture types
+        # **ANKLES** - slight above ground (Y=0.05)
+        l_ankle = np.array([base_x - 0.12, 0.05, base_z])
+        r_ankle = np.array([base_x + 0.12, 0.05, base_z])
         
-        # Movement cycle - breathing and slight swaying
-        time_factor = time.time() % 3.0  # 3-second cycle
-        breath_factor = np.sin(time_factor * 2 * np.pi) * 0.01
-        sway_factor = np.sin(time_factor * np.pi) * 0.015
+        # **KNEES** - mid leg (Y=0.85)
+        l_knee = np.array([base_x - 0.08, 0.85, base_z + sway_x * 0.1])
+        r_knee = np.array([base_x + 0.08, 0.85, base_z + sway_x * 0.1])
         
-        # Head and torso with breathing motion
-        head_top = [base_x, base_y, base_z + height + breath_factor]
-        neck = [base_x + sway_factor, base_y, base_z + height - 0.2 + breath_factor]
-        shoulder_mid = [base_x + sway_factor, base_y, base_z + height - 0.3 + breath_factor]
+        # **HIPS** - bottom of torso (Y=0.95)
+        l_hip = np.array([base_x - 0.10, 0.95, base_z])
+        r_hip = np.array([base_x + 0.10, 0.95, base_z])
+        hip_center = np.array([base_x + sway_x * 0.05, 0.95, base_z])
         
-        # Left and right shoulders with width based on height
-        l_shoulder = [shoulder_mid[0] - width/2, base_y, base_z + height - 0.3 + breath_factor]
-        r_shoulder = [shoulder_mid[0] + width/2, base_y, base_z + height - 0.3 + breath_factor]
+        # **SPINE/TORSO** - middle of body (Y=1.1)
+        spine_lower = np.array([base_x + sway_x * 0.02, 1.1, base_z])
+        spine_mid = np.array([base_x + sway_x * 0.03, 1.3, base_z])
         
-        # Spine with breathing motion
-        spine = [base_x + sway_factor, base_y, base_z + height - 0.5 + breath_factor]
+        # **SHOULDERS** - upper torso (Y=1.4)
+        l_shoulder = np.array([base_x - shoulder_width, 1.4, base_z])
+        r_shoulder = np.array([base_x + shoulder_width, 1.4, base_z])
+        shoulder_mid = np.array([base_x + sway_x * 0.02, 1.4, base_z])
         
-        # Arms with posture variation
-        if posture_type == 0:  # Arms at sides
-            l_elbow = [l_shoulder[0] - 0.1, base_y, base_z + height - 0.6]
-            r_elbow = [r_shoulder[0] + 0.1, base_y, base_z + height - 0.6]
-            l_wrist = [l_elbow[0] - 0.1, base_y, base_z + height - 0.8]
-            r_wrist = [r_elbow[0] + 0.1, base_y, base_z + height - 0.8]
-        elif posture_type == 1:  # Arms slightly forward
-            l_elbow = [l_shoulder[0] - 0.05, base_y + 0.1, base_z + height - 0.6]
-            r_elbow = [r_shoulder[0] + 0.05, base_y + 0.1, base_z + height - 0.6]
-            l_wrist = [l_elbow[0], base_y + 0.2, base_z + height - 0.7]
-            r_wrist = [r_elbow[0], base_y + 0.2, base_z + height - 0.7]
-        elif posture_type == 2:  # One arm up
-            l_elbow = [l_shoulder[0] - 0.1, base_y, base_z + height - 0.6]
-            r_elbow = [r_shoulder[0] + 0.1, base_y, base_z + height - 0.4]
-            l_wrist = [l_elbow[0] - 0.1, base_y, base_z + height - 0.8]
-            r_wrist = [r_elbow[0] + 0.1, base_y, base_z + height - 0.2]
-        else:  # Arms crossed
-            l_elbow = [l_shoulder[0] + 0.1, base_y + 0.1, base_z + height - 0.5]
-            r_elbow = [r_shoulder[0] - 0.1, base_y + 0.1, base_z + height - 0.5]
-            l_wrist = [l_elbow[0] + 0.15, base_y + 0.15, base_z + height - 0.5]
-            r_wrist = [r_elbow[0] - 0.15, base_y + 0.15, base_z + height - 0.5]
+        # **NECK** - between shoulders and head (Y=1.55)
+        neck = np.array([base_x + sway_x * 0.01, 1.55, base_z])
         
-        # Hip area with breathing motion
-        hip = [base_x + sway_factor, base_y, base_z + height - 0.9 + breath_factor * 0.5]
+        # **HEAD** - top of skeleton (Y=1.7)
+        head = np.array([base_x, 1.7, base_z])
         
-        # Left and right hips
-        l_hip = [hip[0] - 0.15, base_y, base_z + height - 0.9]
-        r_hip = [hip[0] + 0.15, base_y, base_z + height - 0.9]
+        # **ARMS** - with natural posture
+        posture_type = random.randint(0, 2)  # 3 posture types
         
-        # Legs with slight variation based on posture
-        leg_sway = sway_factor * 0.5
+        if posture_type == 0:  # Arms at sides (neutral)
+            l_elbow = np.array([base_x - shoulder_width - 0.15, 1.1, base_z])
+            r_elbow = np.array([base_x + shoulder_width + 0.15, 1.1, base_z])
+            l_wrist = np.array([base_x - shoulder_width - 0.25, 0.8, base_z])
+            r_wrist = np.array([base_x + shoulder_width + 0.25, 0.8, base_z])
+            l_hand = np.array([base_x - shoulder_width - 0.25, 0.7, base_z])
+            r_hand = np.array([base_x + shoulder_width + 0.25, 0.7, base_z])
+        elif posture_type == 1:  # Arms forward (walking/active)
+            l_elbow = np.array([base_x - shoulder_width - 0.1, 1.2, base_z + 0.15])
+            r_elbow = np.array([base_x + shoulder_width + 0.1, 1.0, base_z - 0.15])
+            l_wrist = np.array([base_x - shoulder_width - 0.15, 1.0, base_z + 0.25])
+            r_wrist = np.array([base_x + shoulder_width + 0.15, 0.75, base_z - 0.25])
+            l_hand = np.array([base_x - shoulder_width - 0.15, 0.9, base_z + 0.3])
+            r_hand = np.array([base_x + shoulder_width + 0.15, 0.65, base_z - 0.3])
+        else:  # Arms up (reaching/raised)
+            l_elbow = np.array([base_x - shoulder_width - 0.1, 1.5, base_z])
+            r_elbow = np.array([base_x + shoulder_width + 0.1, 1.5, base_z])
+            l_wrist = np.array([base_x - shoulder_width - 0.12, 1.65, base_z])
+            r_wrist = np.array([base_x + shoulder_width + 0.12, 1.65, base_z])
+            l_hand = np.array([base_x - shoulder_width - 0.12, 1.7, base_z])
+            r_hand = np.array([base_x + shoulder_width + 0.12, 1.7, base_z])
         
-        # Left and right knees with slight sway
-        l_knee = [l_hip[0] + leg_sway, base_y, base_z + height - 1.35]
-        r_knee = [r_hip[0] + leg_sway, base_y, base_z + height - 1.35]
+        # Collect all joints - creating a realistic standing skeleton
+        skeleton_joints = [
+            # Head and neck (top)
+            head,           # 0: Head top
+            neck,           # 1: Neck
+            shoulder_mid,   # 2: Shoulder midpoint
+            
+            # Shoulders and upper body
+            l_shoulder,     # 3: Left shoulder
+            r_shoulder,     # 4: Right shoulder
+            spine_mid,      # 5: Mid-spine
+            
+            # Left arm
+            l_elbow,        # 6: Left elbow
+            l_wrist,        # 7: Left wrist
+            l_hand,         # 8: Left hand
+            
+            # Right arm
+            r_elbow,        # 9: Right elbow
+            r_wrist,        # 10: Right wrist
+            r_hand,         # 11: Right hand
+            
+            # Torso and hips
+            spine_lower,    # 12: Lower spine
+            hip_center,     # 13: Hip center
+            l_hip,          # 14: Left hip
+            r_hip,          # 15: Right hip
+            
+            # Left leg
+            l_knee,         # 16: Left knee
+            l_ankle,        # 17: Left ankle
+            l_foot,         # 18: Left foot
+            
+            # Right leg
+            r_knee,         # 19: Right knee
+            r_ankle,        # 20: Right ankle
+            r_foot,         # 21: Right foot
+            
+            # Additional reference points
+            shoulder_mid,   # 22: Shoulder mid (duplicate for skeleton structure)
+            l_hip,          # 23: Left hip (duplicate)
+            r_hip,          # 24: Right hip (duplicate)
+        ]
         
-        # Left and right ankles with ground contact
-        l_ankle = [l_knee[0] + leg_sway * 0.5, base_y, base_z + height - 1.8]
-        r_ankle = [r_knee[0] + leg_sway * 0.5, base_y, base_z + height - 1.8]
+        skeleton = np.array(skeleton_joints, dtype=np.float32)
         
-        # Left and right feet with ground contact
-        l_foot = [l_ankle[0] + 0.1, base_y, base_z + height - 1.8]
-        r_foot = [r_ankle[0] - 0.1, base_y, base_z + height - 1.8]
-        
-        # Additional joints for better visualization
-        l_shoulder_top = [l_shoulder[0], base_y, l_shoulder[2] + 0.05]
-        r_shoulder_top = [r_shoulder[0], base_y, r_shoulder[2] + 0.05]
-        
-        l_hip_top = [l_hip[0], base_y, l_hip[2] + 0.05]
-        r_hip_top = [r_hip[0], base_y, r_hip[2] + 0.05]
-        
-        # Mid-spine with breathing
-        mid_spine = [base_x + sway_factor * 0.7, base_y, base_z + height - 0.7 + breath_factor * 0.7]
-        
-        # Ground reference point
-        ground = [base_x, base_y, base_z]
-        
-        # Collect all joints in COCO-style format
-        skeleton = np.array([
-            head_top, neck, shoulder_mid, 
-            l_shoulder, r_shoulder, 
-            spine, 
-            l_elbow, r_elbow, 
-            hip, 
-            l_wrist, r_wrist, 
-            l_hip, r_hip, 
-            l_knee, r_knee, 
-            l_ankle, r_ankle, 
-            l_foot, r_foot,
-            l_shoulder_top, r_shoulder_top,
-            mid_spine,  # Mid-spine
-            l_hip_top, r_hip_top,
-            ground  # Ground reference point
-        ], dtype=np.float32)
-        
-        # Add natural movement
-        time_factor = time.time() % 2.0  # 2-second cycle
-        movement_amplitude = 0.01  # Subtle movement
-        movement = np.sin(time_factor * np.pi) * movement_amplitude
-        
-        # Apply movement to different parts
-        skeleton[:, 0] += movement * np.random.rand(25)  # X movement
-        skeleton[:, 2] += movement * np.random.rand(25) * 0.5  # Z movement
-        
-        logger.info(f"✅ ENHANCED Skeleton: 500 dense points from 25 joints")
+        logger.info(f"✅ REALISTIC Skeleton: {len(skeleton)} joints, height={total_height:.2f}m, pos=[{base_x:.2f}, {base_y:.2f}, {base_z:.2f}]")
         return skeleton
         
     def enroll_person(self, feature_vector: np.ndarray) -> int:
@@ -1270,8 +1264,8 @@ class WiFiCSIMonitor {
 
         const skeletonGroup = new THREE.Group();
 
-        // Draw joints as small spheres
-        const jointGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+        // Draw joints as small spheres (larger for visibility)
+        const jointGeometry = new THREE.SphereGeometry(0.15, 12, 12);
         const jointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
 
         joints.forEach((joint, idx) => {
@@ -1283,14 +1277,44 @@ class WiFiCSIMonitor {
             }
         });
 
-        // Connect joints with lines (basic skeleton structure)
+        // Connect joints with anatomically correct skeleton structure
+        // Based on 25-joint skeleton mapping
         const connections = [
-            [0, 1], [1, 2], [2, 3], [3, 4], // Head to shoulders
-            [1, 5], [5, 6], [6, 7], // Left arm
-            [1, 8], [8, 9], [9, 10], // Right arm
-            [1, 11], [11, 12], [12, 13], // Spine to left leg
-            [1, 14], [14, 15], [15, 16], // Spine to right leg
-            [11, 14] // Hips connection
+            // Head and neck
+            [0, 1],   // Head to Neck
+            [1, 2],   // Neck to Shoulder midpoint
+            [2, 3],   // Shoulder mid to Left shoulder
+            [2, 4],   // Shoulder mid to Right shoulder
+            
+            // Spine and torso
+            [1, 5],   // Neck to Mid-spine
+            [5, 12],  // Mid-spine to Lower spine
+            [12, 13], // Lower spine to Hip center
+            
+            // Left arm (shoulder -> elbow -> wrist -> hand)
+            [3, 6],   // Left shoulder to Left elbow
+            [6, 7],   // Left elbow to Left wrist
+            [7, 8],   // Left wrist to Left hand
+            
+            // Right arm (shoulder -> elbow -> wrist -> hand)
+            [4, 9],   // Right shoulder to Right elbow
+            [9, 10],  // Right elbow to Right wrist
+            [10, 11], // Right wrist to Right hand
+            
+            // Hip connections
+            [13, 14], // Hip center to Left hip
+            [13, 15], // Hip center to Right hip
+            [14, 15], // Left hip to Right hip (for stability)
+            
+            // Left leg (hip -> knee -> ankle -> foot)
+            [14, 16], // Left hip to Left knee
+            [16, 17], // Left knee to Left ankle
+            [17, 18], // Left ankle to Left foot
+            
+            // Right leg (hip -> knee -> ankle -> foot)
+            [15, 19], // Right hip to Right knee
+            [19, 20], // Right knee to Right ankle
+            [20, 21]  // Right ankle to Right foot
         ];
 
         connections.forEach(([a, b]) => {
@@ -1300,7 +1324,7 @@ class WiFiCSIMonitor {
                     new THREE.Vector3(joints[b][0], joints[b][1], joints[b][2])
                 ];
                 const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
-                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
+                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 3 });
                 const line = new THREE.Line(lineGeometry, lineMaterial);
                 line.userData.isSkeletonMarker = true;
                 skeletonGroup.add(line);
