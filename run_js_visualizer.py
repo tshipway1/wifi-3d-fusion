@@ -1276,14 +1276,15 @@ class WiFiCSIMonitor {
     }
 
     updateSkeleton(joints, personIndex) {
-        // Remove old skeleton
+        // Remove old skeleton ONLY for this person (not all skeletons)
         scene.children.forEach(child => {
-            if (child.userData.isSkeletonMarker) {
+            if (child.userData.isSkeletonMarker && child.userData.personIndex === personIndex) {
                 scene.remove(child);
             }
         });
 
         const skeletonGroup = new THREE.Group();
+        skeletonGroup.userData.personIndex = personIndex;
 
         // Draw joints as small spheres (larger for visibility)
         const jointGeometry = new THREE.SphereGeometry(0.15, 12, 12);
@@ -1294,6 +1295,7 @@ class WiFiCSIMonitor {
                 const sphere = new THREE.Mesh(jointGeometry, jointMaterial);
                 sphere.position.set(joint[0], joint[1], joint[2]);
                 sphere.userData.isSkeletonMarker = true;
+                sphere.userData.personIndex = personIndex;
                 skeletonGroup.add(sphere);
             }
         });
@@ -1348,11 +1350,13 @@ class WiFiCSIMonitor {
                 const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 3 });
                 const line = new THREE.Line(lineGeometry, lineMaterial);
                 line.userData.isSkeletonMarker = true;
+                line.userData.personIndex = personIndex;
                 skeletonGroup.add(line);
             }
         });
 
         skeletonGroup.userData.isSkeletonMarker = true;
+        skeletonGroup.userData.personIndex = personIndex;
         scene.add(skeletonGroup);
     }
 
